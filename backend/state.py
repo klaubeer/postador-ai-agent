@@ -1,14 +1,13 @@
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 
 class AgentState(TypedDict, total=False):
 
     session_id: str
     message: str
-    step: str
 
-    objetivo: str
-    plataforma: str
-    tema: str
+    objetivo: Optional[str]
+    plataforma: Optional[str]
+    tema: Optional[str]
 
     resposta: str
