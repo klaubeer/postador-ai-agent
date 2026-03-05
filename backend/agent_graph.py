@@ -171,7 +171,7 @@ def node_conversa(state: AgentState):
     pergunta = state.get("message", "")
     history = state.get("history", [])
 
-messages = [
+    messages = [
     {
         "role": "system",
         "content": """
