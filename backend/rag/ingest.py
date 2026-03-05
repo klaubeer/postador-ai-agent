@@ -3,7 +3,7 @@ import faiss
 import pickle
 import numpy as np
 from openai import OpenAI
- 
+
 client = OpenAI()
 
 knowledge_path = "backend/rag"
@@ -15,7 +15,17 @@ for file in os.listdir(knowledge_path):
     if file.endswith(".txt"):
 
         with open(f"{knowledge_path}/{file}", "r", encoding="utf-8") as f:
-            texts.append(f.read())
+
+            content = f.read()
+
+            chunks = content.split("\n\n")
+
+            for chunk in chunks:
+
+                chunk = chunk.strip()
+
+                if chunk:
+                    texts.append(chunk)
 
 embeddings = []
 
@@ -42,3 +52,4 @@ with open("backend/rag/texts.pkl", "wb") as f:
     pickle.dump(texts, f)
 
 print("RAG index criado.")
+print("Chunks gerados:", len(texts))
