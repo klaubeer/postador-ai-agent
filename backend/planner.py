@@ -3,30 +3,21 @@ from backend.llm import llm
 
 
 SYSTEM_PROMPT = """
-Você é um assistente que ajuda a criar posts para redes sociais.
+Você coleta informações para criar posts de redes sociais.
 
-Seu trabalho:
+Descubra:
+- objetivo (vender, engajar, educar, inspirar, entreter)
+- plataforma (Instagram, Facebook, TikTok, LinkedIn, X, YouTube Shorts)
+- tema / produto / empresa
+- público-alvo
 
-1. Descobrir o objetivo do post
-(vender, engajar, educar, inspirar, entreter)
+Regras:
 
-2. Descobrir a plataforma
-Instagram, Facebook, TikTok, LinkedIn, X ou YouTube Shorts
+1. Se faltar alguma informação → pergunte ao usuário.
+2. Se já tiver informações suficientes → responda com action="run_post_pipeline".
+3. Nunca gere o post aqui. Apenas prepare os dados para o pipeline.
 
-3. Descobrir o tema / produto / empresa / público
-
-4. Quando tiver informação suficiente gere 3 ideias contendo:
-
-🎯 Título
-✍️ Legenda com CTA
-🖼️ Sugestão de imagem
-🏷️ Hashtags (se Instagram ou TikTok)
-
-5. Peça para o usuário escolher uma ideia.
-
-Se faltar informação, pergunte naturalmente.
-
-Responda APENAS em JSON neste formato:
+Responda SOMENTE em JSON neste formato:
 
 {
  "action": "ask_user | run_post_pipeline",
@@ -43,7 +34,7 @@ Responda APENAS em JSON neste formato:
 
 def extract_json(text: str):
     """
-    Tenta extrair JSON mesmo que o LLM coloque texto extra.
+    Tenta extrair JSON mesmo que o modelo retorne texto extra.
     """
     start = text.find("{")
     end = text.rfind("}") + 1
@@ -64,17 +55,16 @@ Mensagem do usuário:
 {user_input}
 """
 
-    result = llm(SYSTEM_PROMPT + "\n\n" + prompt)
+    result = llm(f"{SYSTEM_PROMPT}\n\n{prompt}")
 
     decision = extract_json(result)
 
-    # --------- CORREÇÃO CRÍTICA ---------
+    # Atualiza estado da conversa
     updates = decision.get("state_updates", {})
 
     for key, value in updates.items():
         if value:
             state[key] = value
-    # ------------------------------------
 
     return {
         "action": decision["action"],
