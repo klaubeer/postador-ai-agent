@@ -1,5 +1,16 @@
 let lang = localStorage.getItem("lang") || "pt"
 
+// cria session id se não existir (uma por aba)
+let sessionId = sessionStorage.getItem("session_id")
+
+if (!sessionId) {
+    sessionId = crypto.randomUUID()
+    sessionStorage.setItem("session_id", sessionId)
+}
+
+console.log("SESSION:", sessionId)
+
+
 const texts = {
 
 pt:{
@@ -16,6 +27,7 @@ send:"Send"
 
 }
 
+
 function setLang(l){
 
 lang = l
@@ -28,11 +40,13 @@ document.getElementById("sendBtn").innerText = texts[l].send
 
 }
 
+
 window.onload = function(){
 
 setLang(lang)
 
 }
+
 
 async function enviar(){
 
@@ -53,13 +67,14 @@ headers:{
 'Content-Type':'application/json'
 },
 body:JSON.stringify({
-message:texto
+message:texto,
+session_id:sessionId
 })
 })
 
 const data = await res.json()
 
-appendMsg('bot', data.reply  || 'Erro ao gerar resposta')
+appendMsg('bot', data.reply || data.post || 'Erro ao gerar resposta')
 
 }catch(err){
 
@@ -68,6 +83,7 @@ appendMsg('bot','Erro ao conectar com o servidor')
 }
 
 }
+
 
 function appendMsg(sender,text){
 
@@ -85,6 +101,7 @@ chat.scrollTop = chat.scrollHeight
 
 }
 
+
 function linkify(text){
 
 return text
@@ -93,6 +110,7 @@ return text
 .replace(/\n/g,'<br>')
 
 }
+
 
 document.getElementById("msg").addEventListener("keydown",function(e){
 
