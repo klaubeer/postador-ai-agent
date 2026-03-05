@@ -1,20 +1,16 @@
-from typing import TypedDict, List
+from typing import TypedDict, Optional
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
 
-    user_input: str
+    objetivo: Optional[str]
+    plataforma: Optional[str]
+    tema: Optional[str]
+    publico: Optional[str]
 
-    objetivo: str
-    publico: str
-    plataforma: str
-    tema: str
-
-    ideias: List[str]
-    melhor_ideia: str
-
-    legenda: str
-    image_prompt: str
-    hashtags: List[str]
-
-    post_final: str
+    ideias: Optional[str]
+    melhor_ideia: Optional[str]
+    legenda: Optional[str]
+    image_prompt: Optional[str]
+    hashtags: Optional[str]
+    post_final: Optional[str]
