@@ -1,13 +1,9 @@
-from typing import TypedDict
 from langgraph.graph import StateGraph, END
+from state import AgentState
+from tools_llm import gerar_ideias_tool
 
 
-class AgentState(TypedDict):
-    message: str
-    resposta: str
-
-
-def perguntar_objetivo(state: AgentState):
+def node_inicio(state: AgentState):
 
     return {
         "resposta": """Qual é o objetivo desse post?
@@ -21,7 +17,7 @@ Entreter
     }
 
 
-def perguntar_plataforma(state: AgentState):
+def node_plataforma(state: AgentState):
 
     return {
         "resposta": """Em qual plataforma será publicado?
@@ -36,24 +32,40 @@ YouTube Shorts
     }
 
 
-def gerar_resposta_final(state: AgentState):
+def node_tema(state: AgentState):
+
+    return {"resposta": "Qual é o tema do post?"}
+
+
+def node_gerar_ideias(state: AgentState):
+
+    result = gerar_ideias_tool(state)
 
     return {
-        "resposta": f"Você disse: {state['message']}"
+        "ideias": result["ideias"],
+        "resposta": f"""
+Aqui vão 3 ideias de post:
+
+{result["ideias"]}
+
+Qual você escolhe?
+"""
     }
 
 
 builder = StateGraph(AgentState)
 
-builder.add_node("objetivo", perguntar_objetivo)
-builder.add_node("plataforma", perguntar_plataforma)
-builder.add_node("final", gerar_resposta_final)
+builder.add_node("inicio", node_inicio)
+builder.add_node("plataforma", node_plataforma)
+builder.add_node("tema", node_tema)
+builder.add_node("gerar_ideias", node_gerar_ideias)
 
-builder.set_entry_point("objetivo")
+builder.set_entry_point("inicio")
 
-builder.add_edge("objetivo", "plataforma")
-builder.add_edge("plataforma", "final")
-builder.add_edge("final", END)
+builder.add_edge("inicio", "plataforma")
+builder.add_edge("plataforma", "tema")
+builder.add_edge("tema", "gerar_ideias")
+builder.add_edge("gerar_ideias", END)
 
 graph = builder.compile()
 
