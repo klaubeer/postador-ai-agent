@@ -36,14 +36,14 @@ setLang(lang)
 
 async function enviar(){
 
-const input = document.getElementById('msg');
-const texto = input.value.trim();
+const input = document.getElementById('msg')
+const texto = input.value.trim()
 
-if(!texto) return;
+if(!texto) return
 
-appendMsg('user', texto);
+appendMsg('user', texto)
 
-input.value = '';
+input.value = ''
 
 try{
 
@@ -55,30 +55,33 @@ headers:{
 body:JSON.stringify({
 message:texto
 })
-});
+})
 
-const data = await res.json();
+const data = await res.json()
 
-appendMsg('bot', data.post || 'Erro ao gerar resposta');
+appendMsg('bot', data.post || 'Erro ao gerar resposta')
 
 }catch(err){
 
-appendMsg('bot','Erro ao conectar com o servidor');
+appendMsg('bot','Erro ao conectar com o servidor')
+
+}
 
 }
 
 function appendMsg(sender,text){
 
-const div=document.createElement('div');
+const div = document.createElement('div')
 
-div.className=`msg ${sender}`;
+div.className = `msg ${sender}`
 
-div.innerHTML=linkify(text);
+div.innerHTML = linkify(text)
 
-document.getElementById('chat').appendChild(div);
+const chat = document.getElementById('chat')
 
-document.getElementById('chat').scrollTop=
-document.getElementById('chat').scrollHeight;
+chat.appendChild(div)
+
+chat.scrollTop = chat.scrollHeight
 
 }
 
@@ -87,6 +90,14 @@ function linkify(text){
 return text
 .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
 .replace(/(https?:\/\/[^\s)]+)/g,'<a href="$1" target="_blank">$1</a>')
-.replace(/\n/g,'<br>');
+.replace(/\n/g,'<br>')
 
-} 
+}
+
+document.getElementById("msg").addEventListener("keydown",function(e){
+
+if(e.key==="Enter"){
+enviar()
+}
+
+})
