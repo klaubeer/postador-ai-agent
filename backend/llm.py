@@ -37,3 +37,16 @@ Responda numerado (1, 2, 3).
     )
 
     return response.choices[0].message.content
+
+response = client.chat.completions.create(
+    model="gpt-4.1-mini",
+    messages=[
+        {"role": "system", "content": "Você cria ideias virais para redes sociais."},
+        {"role": "user", "content": prompt}
+    ],
+    temperature=0.8
+)
+
+print("TOKENS USADOS:", response.usage)
+
+return response.choices[0].message.content
