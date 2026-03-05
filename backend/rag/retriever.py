@@ -2,7 +2,7 @@ import faiss
 import pickle
 import numpy as np
 from openai import OpenAI
-
+ 
 client = OpenAI()
 
 index = faiss.read_index("rag/vector.index")
