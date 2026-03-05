@@ -24,3 +24,7 @@ async def chat(req: ChatRequest):
     resposta = agent_chat(req.sessionId, req.message)  # ← chama o agente
 
     return {"reply": resposta}
+
+@app.get("/")
+def root():
+    return {"status": "Postador API online"}
