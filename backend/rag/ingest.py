@@ -6,7 +6,7 @@ from openai import OpenAI
  
 client = OpenAI()
 
-knowledge_path = "rag"
+knowledge_path = "backend/rag"
 
 texts = []
 
