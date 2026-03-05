@@ -1,40 +1,4 @@
-import json
 from backend.llm import llm
-
-
-def extract_briefing(state):
-
-    prompt = f"""
-Extraia o briefing do pedido abaixo.
-
-Pedido:
-{state["user_input"]}
-
-Retorne APENAS JSON válido neste formato:
-
-{{
- "objetivo": "...",
- "plataforma": "...",
- "publico": "...",
- "tema": "..."
-}}
-
-Se algum campo não existir use null.
-"""
-
-    result = llm(prompt)
-
-    try:
-        data = json.loads(result)
-    except:
-        data = {}
-
-    state["objetivo"] = data.get("objetivo")
-    state["plataforma"] = data.get("plataforma")
-    state["publico"] = data.get("publico")
-    state["tema"] = data.get("tema")
-
-    return state
 
 
 def generate_ideas(state):
@@ -46,6 +10,8 @@ Objetivo: {state.get("objetivo")}
 Plataforma: {state.get("plataforma")}
 Tema: {state.get("tema")}
 Público: {state.get("publico")}
+
+Retorne as ideias de forma clara e numerada.
 """
 
     ideias = llm(prompt)
@@ -62,12 +28,14 @@ Escolha a melhor ideia para viralizar.
 
 Ideias:
 
-{state["ideias"]}
+{state.get("ideias")}
 
 Explique brevemente e retorne apenas a ideia escolhida.
 """
 
-    state["melhor_ideia"] = llm(prompt)
+    melhor = llm(prompt)
+
+    state["melhor_ideia"] = melhor
 
     return state
 
@@ -75,16 +43,20 @@ Explique brevemente e retorne apenas a ideia escolhida.
 def generate_caption(state):
 
     prompt = f"""
-Crie uma legenda para redes sociais.
+Crie uma legenda envolvente para redes sociais.
 
 Ideia:
-{state["melhor_ideia"]}
+{state.get("melhor_ideia")}
 
 Plataforma:
 {state.get("plataforma")}
+
+Inclua um CTA forte.
 """
 
-    state["legenda"] = llm(prompt)
+    legenda = llm(prompt)
+
+    state["legenda"] = legenda
 
     return state
 
@@ -92,30 +64,45 @@ Plataforma:
 def generate_image_prompt(state):
 
     prompt = f"""
-Crie um prompt para gerar imagem com IA.
+Crie um prompt detalhado para gerar uma imagem com IA.
 
-Baseado na ideia:
+Baseado nesta ideia de post:
 
-{state["melhor_ideia"]}
+{state.get("melhor_ideia")}
+
+Descreva a cena visual claramente.
 """
 
-    state["image_prompt"] = llm(prompt)
+    image_prompt = llm(prompt)
+
+    state["image_prompt"] = image_prompt
 
     return state
 
 
 def generate_hashtags(state):
 
-    prompt = f"""
-Crie hashtags relevantes para:
+    plataforma = state.get("plataforma")
 
-{state["melhor_ideia"]}
+    if plataforma and plataforma.lower() not in ["instagram", "tiktok"]:
+        state["hashtags"] = ""
+        return state
+
+    prompt = f"""
+Crie hashtags relevantes para este post.
+
+Ideia:
+{state.get("melhor_ideia")}
 
 Plataforma:
-{state.get("plataforma")}
+{plataforma}
+
+Retorne apenas hashtags.
 """
 
-    state["hashtags"] = llm(prompt)
+    hashtags = llm(prompt)
+
+    state["hashtags"] = hashtags
 
     return state
 
@@ -124,16 +111,16 @@ def format_post(state):
 
     state["post_final"] = f"""
 🎯 Ideia
-{state["melhor_ideia"]}
+{state.get("melhor_ideia")}
 
 ✍️ Legenda
-{state["legenda"]}
+{state.get("legenda")}
 
 🖼️ Prompt de imagem
-{state["image_prompt"]}
+{state.get("image_prompt")}
 
 🏷️ Hashtags
-{state["hashtags"]}
+{state.get("hashtags")}
 """
 
     return state
