@@ -10,12 +10,12 @@ client = OpenAI()
 
 index = None
 
-index_path = "backend/rag/vector.index"
+index_path = "rag/vector.index"
 
 if os.path.exists(index_path):
     index = faiss.read_index(index_path)
 
-with open("backend/rag/texts.pkl", "rb") as f:
+with open("rag/texts.pkl", "rb") as f:
     texts = pickle.load(f)
 
 
