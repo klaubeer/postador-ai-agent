@@ -6,6 +6,10 @@ from tools_llm import gerar_ideias_tool
 sessions = {}
 
 
+# -------------------------
+# NODES
+# -------------------------
+
 def node_inicio(state: AgentState):
 
     state["step"] = "objetivo"
@@ -51,7 +55,7 @@ def node_plataforma(state: AgentState):
 def node_tema(state: AgentState):
 
     state["tema"] = state["message"]
-    state["step"] = "ideias"
+    state["step"] = "fim"
 
     result = gerar_ideias_tool(state)
 
@@ -67,6 +71,33 @@ Qual você escolhe?
     }
 
 
+# -------------------------
+# ROUTER
+# -------------------------
+
+def router(state: AgentState):
+
+    step = state.get("step", "inicio")
+
+    if step == "inicio":
+        return "inicio"
+
+    if step == "objetivo":
+        return "objetivo"
+
+    if step == "plataforma":
+        return "plataforma"
+
+    if step == "tema":
+        return "tema"
+
+    return END
+
+
+# -------------------------
+# LANGGRAPH
+# -------------------------
+
 builder = StateGraph(AgentState)
 
 builder.add_node("inicio", node_inicio)
@@ -76,40 +107,31 @@ builder.add_node("tema", node_tema)
 
 builder.set_entry_point("inicio")
 
-builder.add_edge("inicio", "objetivo")
-builder.add_edge("objetivo", "plataforma")
-builder.add_edge("plataforma", "tema")
-builder.add_edge("tema", END)
+builder.add_conditional_edges("inicio", router)
+builder.add_conditional_edges("objetivo", router)
+builder.add_conditional_edges("plataforma", router)
+builder.add_conditional_edges("tema", router)
 
 graph = builder.compile()
 
 
+# -------------------------
+# EXECUÇÃO DO AGENTE
+# -------------------------
+
 def agent_graph_chat(session_id, message):
 
-    # cria sessão se não existir
     if session_id not in sessions:
-        sessions[session_id] = {"step": "inicio"}
+        sessions[session_id] = {
+            "session_id": session_id,
+            "step": "inicio"
+        }
 
     state = sessions[session_id]
     state["message"] = message
 
-    step = state["step"]
+    result = graph.invoke(state)
 
-    if step == "inicio":
-        result = node_inicio(state)
-
-    elif step == "objetivo":
-        result = node_objetivo(state)
-
-    elif step == "plataforma":
-        result = node_plataforma(state)
-
-    elif step == "tema":
-        result = node_tema(state)
-
-    else:
-        result = {"resposta": "Fluxo finalizado. Digite 'novo post'."}
-
-    sessions[session_id] = state
+    sessions[session_id] = result
 
     return result["resposta"]
