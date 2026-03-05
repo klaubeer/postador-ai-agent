@@ -23,8 +23,8 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def chat(req: ChatRequest):
 
-    resposta = agent_graph_chat(req.message)
-
+    resposta = agent_graph_chat(req.sessionId, req.message)
+    
     return {"reply": resposta}
 
 
