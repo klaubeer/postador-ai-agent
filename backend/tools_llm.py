@@ -1,7 +1,7 @@
 from openai import OpenAI
 from rag.retriever import search
 
-client = OpenAI()
+client = OpenAI() 
 
 
 def gerar_ideias_tool(state):
