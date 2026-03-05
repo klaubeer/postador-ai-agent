@@ -1,5 +1,5 @@
 import json
-from llm import llm
+from backend.llm import llm
 
 
 def extract_briefing(state):
