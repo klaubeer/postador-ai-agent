@@ -2,37 +2,74 @@ from langgraph.graph import StateGraph, END
 from state import AgentState
 from tools_llm import gerar_ideias_tool
 
+from openai import OpenAI
+import json
+
+client = OpenAI()
+
 # memória simples por sessão
 sessions = {}
 
 
 # -------------------------
-# NODES
+# NODE 1 — interpretar mensagem
 # -------------------------
 
-def node_inicio(state: AgentState):
+def node_interpret_message(state: AgentState):
 
-    state["step"] = "objetivo"
+    message = state.get("message", "")
 
-    return {
-        "resposta": """Qual é o objetivo desse post?
+    prompt = f"""
+Extraia informações da mensagem do usuário.
 
-Vender
-Engajar
-Educar
-Inspirar
-Entreter
+Mensagem:
+{message}
+
+Retorne JSON com os campos abaixo se existirem:
+
+objetivo: vender | educar | engajar | inspirar | entreter
+plataforma: instagram | facebook | tiktok | linkedin | x | youtube
+tema: texto livre
+
+Se não souber algum campo, retorne null.
 """
-    }
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    content = response.choices[0].message.content
+
+    try:
+        data = json.loads(content)
+    except:
+        data = {}
+
+    if data.get("objetivo"):
+        state["objetivo"] = data["objetivo"]
+
+    if data.get("plataforma"):
+        state["plataforma"] = data["plataforma"]
+
+    if data.get("tema"):
+        state["tema"] = data["tema"]
+
+    return state
 
 
-def node_objetivo(state: AgentState):
+# -------------------------
+# NODE 2 — decidir próxima ação
+# -------------------------
 
-    state["objetivo"] = state["message"]
-    state["step"] = "plataforma"
+def node_decide_next(state: AgentState):
 
-    return {
-        "resposta": """Em qual plataforma será publicado?
+    if not state.get("plataforma"):
+
+        return {
+            "resposta": """Em qual plataforma será publicado?
 
 Instagram
 Facebook
@@ -41,32 +78,49 @@ LinkedIn
 X
 YouTube Shorts
 """
-    }
+        }
+
+    if not state.get("objetivo"):
+
+        return {
+            "resposta": """Qual é o objetivo do post?
+
+Vender
+Educar
+Engajar
+Inspirar
+Entreter
+"""
+        }
+
+    if not state.get("tema"):
+
+        return {
+            "resposta": "Qual é o tema do post?"
+        }
+
+    state["next"] = "gerar_ideias"
+
+    return state
 
 
-def node_plataforma(state: AgentState):
+# -------------------------
+# NODE 3 — gerar ideias
+# -------------------------
 
-    state["plataforma"] = state["message"]
-    state["step"] = "tema"
-
-    return {"resposta": "Qual é o tema do post?"}
-
-
-def node_tema(state: AgentState):
-
-    state["tema"] = state["message"]
-    state["step"] = "fim"
+def node_gerar_ideias(state: AgentState):
 
     result = gerar_ideias_tool(state)
 
+    ideias = result.get("ideias", "")
+
     return {
-        "ideias": result["ideias"],
         "resposta": f"""
 Aqui vão 3 ideias de post:
 
-{result["ideias"]}
+{ideias}
 
-Qual você escolhe?
+Qual você prefere?
 """
     }
 
@@ -77,21 +131,10 @@ Qual você escolhe?
 
 def router(state: AgentState):
 
-    step = state.get("step", "inicio")
+    if state.get("next") == "gerar_ideias":
+        return "gerar_ideias"
 
-    if step == "inicio":
-        return "inicio"
-
-    if step == "objetivo":
-        return "objetivo"
-
-    if step == "plataforma":
-        return "plataforma"
-
-    if step == "tema":
-        return "tema"
-
-    return END
+    return "decide_next"
 
 
 # -------------------------
@@ -100,31 +143,33 @@ def router(state: AgentState):
 
 builder = StateGraph(AgentState)
 
-builder.add_node("inicio", node_inicio)
-builder.add_node("objetivo", node_objetivo)
-builder.add_node("plataforma", node_plataforma)
-builder.add_node("tema", node_tema)
+builder.add_node("interpret", node_interpret_message)
+builder.add_node("decide_next", node_decide_next)
+builder.add_node("gerar_ideias", node_gerar_ideias)
 
-builder.set_entry_point("inicio")
+builder.set_entry_point("interpret")
 
-builder.add_conditional_edges("inicio", router)
-builder.add_conditional_edges("objetivo", router)
-builder.add_conditional_edges("plataforma", router)
-builder.add_conditional_edges("tema", router)
+builder.add_edge("interpret", "decide_next")
+
+builder.add_conditional_edges(
+    "decide_next",
+    router
+)
+
+builder.add_edge("gerar_ideias", END)
 
 graph = builder.compile()
 
 
 # -------------------------
-# EXECUÇÃO DO AGENTE
+# FUNÇÃO USADA PELA API
 # -------------------------
 
 def agent_graph_chat(session_id, message):
 
     if session_id not in sessions:
         sessions[session_id] = {
-            "session_id": session_id,
-            "step": "inicio"
+            "session_id": session_id
         }
 
     state = sessions[session_id]
@@ -132,6 +177,7 @@ def agent_graph_chat(session_id, message):
 
     result = graph.invoke(state)
 
-    sessions[session_id] = result
+    # atualizar memória
+    sessions[session_id] = {**state, **result}
 
-    return result["resposta"]
+    return result.get("resposta", "Não consegui gerar resposta.")
