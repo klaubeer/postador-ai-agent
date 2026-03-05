@@ -3,7 +3,7 @@ let lang = localStorage.getItem("lang") || "pt"
 const texts = {
 
 pt:{
-welcome:"👋 Olá! Eu sou <b>O Postador 🤖</b><br>Digite Oi e vamos lá!",
+welcome:"👋 Olá! Eu sou <b>O Postador 🤖</b><br>Digite Oi para começar!",
 placeholder:"Digite sua mensagem...",
 send:"Enviar"
 },
