@@ -45,7 +45,7 @@ appendMsg('user', texto);
 
 input.value = '';
 
-const res = await fetch('http://127.0.0.1:8000/chat',{
+const res = await fetch('http://127.0.0.1:8000/post',{
 method:'POST',
 headers:{
 'Content-Type':'application/json'
@@ -59,7 +59,7 @@ language:lang
 
 const data = await res.json();
 
-appendMsg('bot', data.reply || 'Erro ao gerar resposta');
+appendMsg('bot', data.post || 'Erro ao gerar resposta');
 
 }
 
