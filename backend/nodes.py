@@ -26,18 +26,15 @@ Regras:
 
 def select_best_idea(state):
 
-   prompt = f"""
-Crie 3 ideias de post curtas.
+    prompt = f"""
+Escolha a melhor ideia para viralizar.
 
-Objetivo: {state.get("objetivo")}
-Plataforma: {state.get("plataforma")}
-Tema: {state.get("tema")}
-Público: {state.get("publico")}
+Ideias:
+{state.get("ideias")}
 
 Regras:
-- cada ideia no máximo 8 palavras
+- retorne apenas o número da ideia
 - sem explicação
-- apenas lista numerada
 """
 
     melhor = llm(prompt)
@@ -49,7 +46,7 @@ Regras:
 
 def generate_caption(state):
 
-  prompt = f"""
+    prompt = f"""
 Crie legenda curta.
 
 Ideia:
@@ -72,7 +69,7 @@ Regras:
 
 def generate_image_prompt(state):
 
-   prompt = f"""
+    prompt = f"""
 Crie prompt de imagem curto.
 
 Ideia:
@@ -98,7 +95,7 @@ def generate_hashtags(state):
         state["hashtags"] = ""
         return state
 
-  prompt = f"""
+    prompt = f"""
 Crie hashtags para este post.
 
 Ideia:
