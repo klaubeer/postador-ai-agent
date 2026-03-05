@@ -1,0 +1,17 @@
+postador-ai-agent
+│
+├── backend
+│   ├── main.py
+│   ├── planner.py
+│   ├── agent_graph.py
+│   ├── image_gen.py
+│   └── nodes
+│       ├── gerar_ideia.py
+│       ├── gerar_legenda.py
+│       ├── gerar_prompt_imagem.py
+│       └── format_post.py
+│
+└── frontend
+    ├── index.html
+    ├── style.css
+    └── app.js
