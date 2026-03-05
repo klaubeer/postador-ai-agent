@@ -5,35 +5,47 @@ from backend.llm import llm
 def extract_briefing(state):
 
     prompt = f"""
-Extraia o briefing do pedido:
+Extraia o briefing do pedido abaixo.
 
+Pedido:
 {state["user_input"]}
 
-Retorne JSON:
+Retorne APENAS JSON válido neste formato:
 
-objetivo
-plataforma
-publico
-tema
+{{
+ "objetivo": "...",
+ "plataforma": "...",
+ "publico": "...",
+ "tema": "..."
+}}
+
+Se algum campo não existir use null.
 """
 
     result = llm(prompt)
 
-    data = json.loads(result)
+    try:
+        data = json.loads(result)
+    except:
+        data = {}
 
-    state.update(data)
+    state["objetivo"] = data.get("objetivo")
+    state["plataforma"] = data.get("plataforma")
+    state["publico"] = data.get("publico")
+    state["tema"] = data.get("tema")
 
     return state
+
 
 def generate_ideas(state):
 
     prompt = f"""
-Crie 5 ideias de post.
+Crie 5 ideias de post para redes sociais.
 
-Objetivo: {state["objetivo"]}
-Plataforma: {state["plataforma"]}
-Tema: {state["tema"]}
-Público: {state["publico"]}
+Objetivo: {state.get("objetivo")}
+Plataforma: {state.get("plataforma")}
+Tema: {state.get("tema")}
+Público: {state.get("publico")}
 """
 
     ideias = llm(prompt)
@@ -41,6 +53,7 @@ Público: {state["publico"]}
     state["ideias"] = ideias
 
     return state
+
 
 def select_best_idea(state):
 
@@ -50,6 +63,8 @@ Escolha a melhor ideia para viralizar.
 Ideias:
 
 {state["ideias"]}
+
+Explique brevemente e retorne apenas a ideia escolhida.
 """
 
     state["melhor_ideia"] = llm(prompt)
@@ -66,7 +81,7 @@ Ideia:
 {state["melhor_ideia"]}
 
 Plataforma:
-{state["plataforma"]}
+{state.get("plataforma")}
 """
 
     state["legenda"] = llm(prompt)
@@ -77,7 +92,7 @@ Plataforma:
 def generate_image_prompt(state):
 
     prompt = f"""
-Crie um prompt de imagem IA.
+Crie um prompt para gerar imagem com IA.
 
 Baseado na ideia:
 
@@ -92,12 +107,12 @@ Baseado na ideia:
 def generate_hashtags(state):
 
     prompt = f"""
-Crie hashtags para:
+Crie hashtags relevantes para:
 
 {state["melhor_ideia"]}
 
 Plataforma:
-{state["plataforma"]}
+{state.get("plataforma")}
 """
 
     state["hashtags"] = llm(prompt)
