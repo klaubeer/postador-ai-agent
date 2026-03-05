@@ -267,9 +267,9 @@ Qual é o objetivo do post?
 
     state["message"] = message
 
-    result = graph.invoke(state)
+    state = graph.invoke(state)
 
-    resposta = result.get("resposta", "Não consegui gerar resposta.")
+    resposta = state.get("resposta", "Não consegui gerar resposta.")
 
     state["history"].append({
         "role": "assistant",
