@@ -30,7 +30,10 @@ def get_session_state(session_id: str):
             "objetivo": None,
             "plataforma": None,
             "tema": None,
-            "publico": None
+            "publico": None,
+            "image_prompt": None,
+            "image_url": None,
+            "awaiting_image_approval": False
         }
     return sessions[session_id]
 
@@ -53,6 +56,29 @@ def chat(req: ChatRequest):
 
     state = get_session_state(req.session_id)
 
+    # -------------------------
+    # geração de imagem
+    # -------------------------
+
+    if state.get("awaiting_image_approval"):
+
+        if "gerar imagem" in req.message.lower():
+
+            from backend.image_gen import generate_image
+
+            image_url = generate_image(state["image_prompt"])
+
+            state["image_url"] = image_url
+            state["awaiting_image_approval"] = False
+
+            return {
+                "image": image_url
+            }
+
+    # -------------------------
+    # planner
+    # -------------------------
+
     decision = planner(req.message, state)
     state = decision["state"]
 
@@ -61,7 +87,9 @@ def chat(req: ChatRequest):
     required = ["objetivo", "plataforma", "tema"]
 
     if decision["action"] == "run_post_pipeline":
+
         if not all(state.get(k) for k in required):
+
             return {
                 "message": "Preciso de mais algumas informações antes de gerar o post."
             }
@@ -79,19 +107,3 @@ def chat(req: ChatRequest):
         "message": decision["message"],
         "state": state
     }
-
-
-if state.get("awaiting_image_approval"):
-
-    if "gerar imagem" in req.message.lower():
-
-        from backend.image_gen import generate_image
-
-        image_url = generate_image(state["image_prompt"])
-
-        state["image_url"] = image_url
-        state["awaiting_image_approval"] = False
-
-        return {
-            "image": image_url
-        }
