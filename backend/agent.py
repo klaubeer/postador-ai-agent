@@ -1,5 +1,6 @@
 from memory import get_session
 from tools import gerador_imagem
+from llm import gerar_ideias_post
 
 
 def agent_chat(session_id, message):
@@ -41,19 +42,22 @@ YouTube Shorts
 
         return "Qual é o tema do post?"
 
-    # STEP 4 — TEMA
+    # STEP 4 — TEMA (AGORA USA IA)
     if session["step"] == "tema":
+
         session["tema"] = message
         session["step"] = "ideias"
 
+        ideias = gerar_ideias_post(
+            session["tema"],
+            session["plataforma"],
+            session["objetivo"]
+        )
+
         return f"""
-Aqui vão 3 ideias de post para {message}:
+Aqui vão 3 ideias de post:
 
-1️⃣ Dica prática sobre {message}
-
-2️⃣ Curiosidade interessante sobre {message}
-
-3️⃣ História ou caso real envolvendo {message}
+{ideias}
 
 Qual você escolhe? (1, 2 ou 3)
 """
@@ -96,8 +100,8 @@ Descrição da imagem:
 {message}
 
 Está bom ou deseja ajustar?
-Digite:
 
+Digite:
 SIM
 ou
 AJUSTAR
