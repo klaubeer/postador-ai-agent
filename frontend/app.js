@@ -10,7 +10,6 @@ if (!sessionId) {
 
 console.log("SESSION:", sessionId)
 
-
 const texts = {
 
 pt:{
@@ -74,9 +73,19 @@ session_id:sessionId
 
 const data = await res.json()
 
-appendMsg('bot', data.reply || data.post || 'Erro ao gerar resposta')
+console.log("SERVER RESPONSE:", data)
+
+const resposta =
+      data.message
+   || data.post
+   || data.reply
+   || "Erro ao gerar resposta"
+
+appendMsg('bot', resposta)
 
 }catch(err){
+
+console.error(err)
 
 appendMsg('bot','Erro ao conectar com o servidor')
 
