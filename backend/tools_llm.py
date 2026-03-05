@@ -6,7 +6,8 @@ client = OpenAI()
 
 def gerar_ideias_tool(state):
 
-    contexto = search(state.get("message", ""))
+    query = state.get("message") or state.get("tema", "")
+    contexto = search(query)
 
     prompt = f"""
 Use também o conhecimento abaixo sobre social media:
@@ -40,7 +41,8 @@ As ideias devem conter:
 
 def gerar_legenda_tool(state):
 
-    contexto = search(state.get("message", ""))
+    query = state.get("message") or state.get("tema", "")
+    contexto = search(query)
 
     prompt = f"""
 Use também este conhecimento de marketing:
@@ -75,8 +77,7 @@ A legenda deve conter:
 
 def buscar_conhecimento_tool(state):
 
-    query = state.get("message")
-
+    query = state.get("message") or state.get("tema", "")
     contexto = search(query)
 
     return {
