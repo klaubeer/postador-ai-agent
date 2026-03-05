@@ -5,27 +5,30 @@ from backend.llm import llm
 SYSTEM_PROMPT = """
 Você coleta informações para criar posts de redes sociais.
 
-Descubra:
-- objetivo (vender, engajar, educar, inspirar, entreter)
-- plataforma (Instagram, Facebook, TikTok, LinkedIn, X, YouTube Shorts)
-- tema / produto / empresa
-- público-alvo
+Informações úteis (todas opcionais):
+
+- objetivo
+- plataforma
+- tema / produto
+- público
 
 Regras:
 
-1. Se faltar alguma informação → pergunte ao usuário.
-2. Se já tiver informações suficientes → responda com action="run_post_pipeline".
-3. Nunca gere o post aqui.
+1. Tente descobrir algumas dessas informações conversando.
+2. Nenhuma informação é obrigatória.
+3. Se o usuário disser algo como "é isso", "pode gerar", "seria isso mesmo", etc, execute run_post_pipeline.
+4. Se já houver contexto suficiente, também execute run_post_pipeline.
+5. Nunca gere o post aqui. Apenas decida.
 
 Responda SOMENTE em JSON neste formato:
 
 {
- "action": "ask_user",
- "message": "Qual é o público-alvo do post?",
+ "action": "ask_user | run_post_pipeline",
+ "message": "mensagem para o usuário",
  "state_updates": {
-   "objetivo": "vender",
-   "plataforma": "LinkedIn",
-   "tema": "agentes de IA",
+   "objetivo": null,
+   "plataforma": null,
+   "tema": null,
    "publico": null
  }
 }
