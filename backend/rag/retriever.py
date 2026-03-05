@@ -5,9 +5,9 @@ from openai import OpenAI
  
 client = OpenAI()
 
-index = faiss.read_index("rag/vector.index")
+index = faiss.read_index("backend/ragrag/vector.index")
 
-with open("rag/texts.pkl", "rb") as f:
+with open("backend/ragrag/texts.pkl", "rb") as f:
     texts = pickle.load(f)
 
 
