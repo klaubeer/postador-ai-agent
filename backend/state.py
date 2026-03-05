@@ -1,5 +1,4 @@
-from typing import TypedDict, Optional, List, Dict
-
+from typing import TypedDict, List, Dict, Optional
 
 class AgentState(TypedDict, total=False):
 
@@ -8,10 +7,8 @@ class AgentState(TypedDict, total=False):
 
     history: List[Dict]
 
-    intent: Optional[str]
+    resposta: str
 
     objetivo: Optional[str]
     plataforma: Optional[str]
     tema: Optional[str]
-
-    resposta: str
