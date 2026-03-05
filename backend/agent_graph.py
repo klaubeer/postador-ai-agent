@@ -55,8 +55,14 @@ def node_rag(state: AgentState):
 # VERIFICAR SE RAG ACHOU ALGO
 # -------------------------
 
+def router_rag(state: AgentState):
 
-    
+    contexto = state.get("contexto_rag", "")
+
+    if contexto and len(contexto.strip()) > 20:
+        return "responder_rag"
+
+    return "router_inicio"
 
 
 # -------------------------
@@ -201,7 +207,12 @@ def node_conversa(state: AgentState):
 # ROUTER INICIO
 # -------------------------
 
+def router_inicio(state: AgentState):
 
+    if not state.get("objetivo"):
+        return "perguntar_objetivo"
+
+    return "planner"
 
 
 # -------------------------
