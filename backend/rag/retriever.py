@@ -1,11 +1,19 @@
-import faiss
 import pickle
 import numpy as np
 from openai import OpenAI
+import os
+import faiss
  
 client = OpenAI()
 
-index = faiss.read_index("backend/rag/vector.index")
+
+
+index = None
+
+index_path = "backend/rag/vector.index"
+
+if os.path.exists(index_path):
+    index = faiss.read_index(index_path)
 
 with open("backend/rag/texts.pkl", "rb") as f:
     texts = pickle.load(f)
