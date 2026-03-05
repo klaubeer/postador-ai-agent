@@ -243,7 +243,6 @@ builder.add_node("rag", node_rag)
 builder.add_node("responder_rag", node_responder_rag)
 
 builder.add_node("perguntar_objetivo", node_perguntar_objetivo)
-
 builder.add_node("planner", node_planner)
 builder.add_node("gerar_ideias", node_gerar_ideias)
 builder.add_node("gerar_legenda", node_gerar_legenda)
@@ -253,6 +252,20 @@ builder.set_entry_point("capturar_objetivo")
 
 builder.add_edge("capturar_objetivo", "rag")
 
+
+def router_rag(state):
+
+    contexto = state.get("contexto_rag", "")
+
+    if contexto and len(contexto.strip()) > 10:
+        return "responder_rag"
+
+    if not state.get("objetivo"):
+        return "perguntar_objetivo"
+
+    return "planner"
+
+
 builder.add_conditional_edges(
     "rag",
     router_rag
@@ -260,23 +273,18 @@ builder.add_conditional_edges(
 
 builder.add_edge("responder_rag", END)
 
-builder.add_conditional_edges(
-    "router_inicio",
-    router_inicio
-)
+builder.add_edge("perguntar_objetivo", END)
 
 builder.add_conditional_edges(
     "planner",
     router
 )
 
-builder.add_edge("perguntar_objetivo", END)
 builder.add_edge("gerar_ideias", "gerar_legenda")
 builder.add_edge("gerar_legenda", END)
 builder.add_edge("conversa", END)
 
 graph = builder.compile()
-
 
 # -------------------------
 # FASTAPI
