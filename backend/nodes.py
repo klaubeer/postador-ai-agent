@@ -135,9 +135,6 @@ def format_post(state):
 🏷️ Hashtags
 {state.get("hashtags")}
 
-🖼️ Prompt de imagem
-{state.get("image_prompt")}
-
 Digite **gerar imagem** para criar a imagem.
 """
 
