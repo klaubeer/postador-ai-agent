@@ -36,7 +36,7 @@ index.add(
     np.array(embeddings).astype("float32")
 )
 
-faiss.write_index(index, "rag/vector.index")
+faiss.write_index(index, "backend/rag/vector.index")
 
 with open("rag/texts.pkl", "wb") as f:
     pickle.dump(texts, f)
