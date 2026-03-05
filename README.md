@@ -5,7 +5,7 @@ Status: Work in progress
 To test / para testar: 
 https://postador-ai-agent.vercel.app/
 
-EN The Postador — AI Content Generation Platform
+The PostMaker — AI Content Generation Platform
 Description
 
 Postador is an AI-powered platform designed to help businesses generate social media content quickly and efficiently.
