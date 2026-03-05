@@ -4,17 +4,19 @@ from backend.llm import llm
 def generate_ideas(state):
 
     prompt = f"""
-Crie 3 ideias de post curtas.
+Crie 3 ideias curtas de post.
 
-Objetivo: {state.get("objetivo")}
+Produto/Tema: {state.get("tema")}
 Plataforma: {state.get("plataforma")}
-Tema: {state.get("tema")}
 Público: {state.get("publico")}
+Objetivo: {state.get("objetivo")}
 
 Regras:
-- cada ideia no máximo 8 palavras
-- sem explicação
+- usar o produto ou tema
+- pensar no público
+- máximo 12 palavras por ideia
 - apenas lista numerada
+- sem explicação
 """
 
     ideias = llm(prompt)
@@ -33,7 +35,7 @@ Ideias:
 {state.get("ideias")}
 
 Regras:
-- retorne apenas o número da ideia
+- retorne apenas o texto da ideia escolhida
 - sem explicação
 """
 
@@ -47,15 +49,16 @@ Regras:
 def generate_caption(state):
 
     prompt = f"""
-Crie legenda curta.
+Crie legenda curta para redes sociais.
 
-Ideia:
-{state.get("melhor_ideia")}
-
-Plataforma:
-{state.get("plataforma")}
+Ideia: {state.get("melhor_ideia")}
+Produto/Tema: {state.get("tema")}
+Público: {state.get("publico")}
+Plataforma: {state.get("plataforma")}
 
 Regras:
+- mencionar o produto
+- falar com o público
 - máximo 1 frase
 - incluir CTA
 """
@@ -70,13 +73,15 @@ Regras:
 def generate_image_prompt(state):
 
     prompt = f"""
-Crie prompt de imagem curto.
+Crie prompt curto para gerar imagem.
 
-Ideia:
-{state.get("melhor_ideia")}
+Produto/Tema: {state.get("tema")}
+Ideia: {state.get("melhor_ideia")}
+Público: {state.get("publico")}
 
 Regras:
 - máximo 15 palavras
+- imagem deve mostrar o produto
 - estilo visual claro
 """
 
@@ -96,17 +101,16 @@ def generate_hashtags(state):
         return state
 
     prompt = f"""
-Crie hashtags para este post.
+Crie hashtags para redes sociais.
 
-Ideia:
-{state.get("melhor_ideia")}
-
-Plataforma:
-{plataforma}
+Produto/Tema: {state.get("tema")}
+Público: {state.get("publico")}
+Plataforma: {plataforma}
 
 Regras:
 - máximo 5 hashtags
-- retorne apenas hashtags
+- incluir hashtag do produto
+- apenas hashtags
 """
 
     hashtags = llm(prompt)
