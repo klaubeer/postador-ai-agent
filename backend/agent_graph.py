@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, END
 from state import AgentState
 from tools_llm import gerar_ideias_tool, gerar_legenda_tool
+from rag.retriever import search
 
 from openai import OpenAI
 import json
@@ -37,6 +38,21 @@ def node_capturar_objetivo(state: AgentState):
 
 
 # -------------------------
+# RAG - BUSCAR CONTEXTO
+# -------------------------
+
+def node_rag(state: AgentState):
+
+    query = state.get("message", "")
+
+    contexto = search(query)
+
+    state["contexto_rag"] = contexto
+
+    return state
+
+
+# -------------------------
 # PERGUNTAR OBJETIVO
 # -------------------------
 
@@ -62,13 +78,19 @@ def node_planner(state: AgentState):
 
     history = state.get("history", [])[-20:]
 
+    contexto = state.get("contexto_rag", "")
+
     messages = [
         {
             "role": "system",
-            "content": """
+            "content": f"""
 Você é um assistente de social media.
 
-O objetivo do post é: """ + str(state.get("objetivo", "")) + """
+Use também o seguinte conhecimento relevante:
+
+{contexto}
+
+O objetivo do post é: {state.get("objetivo", "")}
 
 Analise a conversa e identifique a intenção do usuário.
 
@@ -80,7 +102,7 @@ conversa
 
 Responda apenas JSON:
 
-{ "intent": "..." }
+{{ "intent": "..." }}
 """
         }
     ] + history
@@ -111,10 +133,8 @@ def node_gerar_ideias(state: AgentState):
     ideias = gerar_ideias_tool(state)
 
     return {
-    "ideias": ideias["ideias"]
-}
-
-
+        "ideias": ideias["ideias"]
+    }
 
 
 # -------------------------
@@ -150,10 +170,21 @@ def node_conversa(state: AgentState):
 
     history = state.get("history", [])
 
+    contexto = state.get("contexto_rag", "")
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Você é um assistente de social media."}
+            {
+                "role": "system",
+                "content": f"""
+Você é um assistente de social media.
+
+Use o seguinte conhecimento quando relevante:
+
+{contexto}
+"""
+            }
         ] + history
     )
 
@@ -198,6 +229,7 @@ def router(state: AgentState):
 builder = StateGraph(AgentState)
 
 builder.add_node("capturar_objetivo", node_capturar_objetivo)
+builder.add_node("rag", node_rag)
 builder.add_node("perguntar_objetivo", node_perguntar_objetivo)
 
 builder.add_node("planner", node_planner)
@@ -207,8 +239,10 @@ builder.add_node("conversa", node_conversa)
 
 builder.set_entry_point("capturar_objetivo")
 
+builder.add_edge("capturar_objetivo", "rag")
+
 builder.add_conditional_edges(
-    "capturar_objetivo",
+    "rag",
     router_inicio
 )
 
