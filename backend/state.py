@@ -10,4 +10,6 @@ class AgentState(TypedDict, total=False):
     plataforma: Optional[str]
     tema: Optional[str]
 
+    intent: Optional[str]
+
     resposta: str
