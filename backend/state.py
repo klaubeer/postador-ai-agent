@@ -14,3 +14,7 @@ class AgentState(TypedDict, total=False):
     image_prompt: Optional[str]
     hashtags: Optional[str]
     post_final: Optional[str]
+
+state["image_prompt"] = None
+state["image_url"] = None
+state["awaiting_image_approval"] = False
