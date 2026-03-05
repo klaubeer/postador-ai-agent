@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
+from agent_graph import agent_graph_chat
 from agent import agent_chat   # ← novo import
+
 
 app = FastAPI()
 
@@ -21,7 +22,7 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def chat(req: ChatRequest):
 
-    resposta = agent_chat(req.sessionId, req.message)  # ← chama o agente
+   resposta = agent_graph_chat(req.message)
 
     return {"reply": resposta}
 
