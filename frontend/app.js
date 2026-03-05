@@ -59,7 +59,7 @@ message:texto
 
 const data = await res.json()
 
-appendMsg('bot', data.post || 'Erro ao gerar resposta')
+appendMsg('bot', data.reply  || 'Erro ao gerar resposta')
 
 }catch(err){
 
