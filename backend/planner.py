@@ -3,19 +3,17 @@ from backend.llm import llm
 
 
 SYSTEM_PROMPT = """
-Você é O Postador 🤖, um assistente que ajuda clientes a criar posts para redes sociais.
+Você é um assistente que ajuda a criar posts para redes sociais.
 
-Seu objetivo é guiar o usuário na criação de um post.
+Seu trabalho:
 
-Fluxo da conversa:
-
-1. Descubra o objetivo do post
+1. Descobrir o objetivo do post
 (vender, engajar, educar, inspirar, entreter)
 
-2. Descubra a plataforma
+2. Descobrir a plataforma
 Instagram, Facebook, TikTok, LinkedIn, X ou YouTube Shorts
 
-3. Descubra o tema / produto / empresa / público
+3. Descobrir o tema / produto / empresa / público
 
 4. Quando tiver informação suficiente gere 3 ideias contendo:
 
@@ -43,58 +41,46 @@ Responda APENAS em JSON neste formato:
 """
 
 
-def extract_json(text):
+def extract_json(text: str):
     """
-    Extrai JSON válido de uma resposta do LLM,
-    mesmo que venha com texto antes/depois.
+    Tenta extrair JSON mesmo que o LLM coloque texto extra.
     """
-
-    text = text.strip()
-
     start = text.find("{")
     end = text.rfind("}") + 1
-
-    if start == -1 or end == -1:
-        raise ValueError("JSON não encontrado")
-
-    json_str = text[start:end]
-
-    return json.loads(json_str)
+    return json.loads(text[start:end])
 
 
-def planner(user_input, state):
+def planner(user_input: str, state: dict):
 
     prompt = f"""
-{SYSTEM_PROMPT}
-
 Estado atual da conversa:
-{state}
+
+objetivo: {state.get("objetivo")}
+plataforma: {state.get("plataforma")}
+tema: {state.get("tema")}
+publico: {state.get("publico")}
 
 Mensagem do usuário:
 {user_input}
 """
 
-    result = llm(prompt)
+    result = llm(
+        system_prompt=SYSTEM_PROMPT,
+        user_prompt=prompt
+    )
 
-    try:
-        decision = extract_json(result)
+    decision = extract_json(result)
 
-    except Exception as e:
-
-        print("Planner JSON error:", e)
-        print("LLM response:", result)
-
-        decision = {
-            "action": "ask_user",
-            "message": "Pode me contar um pouco mais sobre o post que você quer criar?",
-            "state_updates": {}
-        }
-
-    # atualiza state com segurança
+    # --------- CORREÇÃO CRÍTICA ---------
     updates = decision.get("state_updates", {})
 
-    for k, v in updates.items():
-        if v and v != "null":
-            state[k] = v
+    for key, value in updates.items():
+        if value:
+            state[key] = value
+    # ------------------------------------
 
-    return decision, state
+    return {
+        "action": decision["action"],
+        "message": decision["message"],
+        "state": state
+    }
