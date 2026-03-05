@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
-from state import AgentState
+from backend.state import AgentState
 
-from nodes import (
+from backend.nodes import (
     extract_briefing,
     generate_ideas,
     select_best_idea,
