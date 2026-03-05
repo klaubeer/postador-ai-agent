@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.agent_graph import graph
 from backend.planner import planner
 
-
 app = FastAPI()
 
 app.add_middleware(
@@ -15,7 +14,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # -------------------------
 # sessão simples em memória
@@ -55,6 +53,7 @@ class ChatRequest(BaseModel):
 def chat(req: ChatRequest):
 
     state = get_session_state(req.session_id)
+    msg = req.message.lower().strip()
 
     # -------------------------
     # geração de imagem
@@ -62,11 +61,16 @@ def chat(req: ChatRequest):
 
     if state.get("awaiting_image_approval"):
 
-        if "gerar imagem" in req.message.lower():
+        if any(x in msg for x in ["gerar imagem", "gerar", "imagem"]):
 
             from backend.image_gen import generate_image
 
-            image_url = generate_image(state["image_prompt"])
+            prompt = state.get("image_prompt")
+
+            if not prompt:
+                return {"message": "Erro: prompt de imagem não encontrado."}
+
+            image_url = generate_image(prompt)
 
             state["image_url"] = image_url
             state["awaiting_image_approval"] = False
@@ -75,14 +79,16 @@ def chat(req: ChatRequest):
                 "image": image_url
             }
 
+        return {
+            "message": "Digite **gerar imagem** para criar a imagem."
+        }
+
     # -------------------------
     # planner
     # -------------------------
 
     decision = planner(req.message, state)
     state = decision["state"]
-
-    # -------- validação antes do pipeline --------
 
     required = ["objetivo", "plataforma", "tema"]
 
@@ -100,8 +106,6 @@ def chat(req: ChatRequest):
             "post": result["post_final"],
             "state": state
         }
-
-    # --------------------------------------------
 
     return {
         "message": decision["message"],
