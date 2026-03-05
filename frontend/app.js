@@ -1,3 +1,39 @@
+let lang = localStorage.getItem("lang") || "pt"
+
+const texts = {
+
+pt:{
+welcome:"👋 Olá! Eu sou <b>O Postador 🤖</b><br>Digite Oi e vamos lá!",
+placeholder:"Digite sua mensagem...",
+send:"Enviar"
+},
+
+en:{
+welcome:"👋 Hello! I'm <b>The Poster 🤖</b><br>Type Hi to start!",
+placeholder:"Type your message...",
+send:"Send"
+}
+
+}
+
+function setLang(l){
+
+lang = l
+
+localStorage.setItem("lang",l)
+
+document.getElementById("welcome").innerHTML = texts[l].welcome
+document.getElementById("msg").placeholder = texts[l].placeholder
+document.getElementById("sendBtn").innerText = texts[l].send
+
+}
+
+window.onload = function(){
+
+setLang(lang)
+
+}
+
 async function enviar(){
 
 const input = document.getElementById('msg');
@@ -16,7 +52,8 @@ headers:{
 },
 body:JSON.stringify({
 message:texto,
-sessionId:'web-demo'
+sessionId:'web-demo',
+language:lang
 })
 });
 
