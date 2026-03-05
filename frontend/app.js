@@ -75,6 +75,17 @@ const data = await res.json()
 
 console.log("SERVER RESPONSE:", data)
 
+
+// 🖼️ SE VEIO IMAGEM
+if(data.image){
+
+appendImage(data.image)
+return
+
+}
+
+
+// resposta normal
 const resposta =
       data.message
    || data.post
@@ -101,6 +112,31 @@ const div = document.createElement('div')
 div.className = `msg ${sender}`
 
 div.innerHTML = linkify(text)
+
+const chat = document.getElementById('chat')
+
+chat.appendChild(div)
+
+chat.scrollTop = chat.scrollHeight
+
+}
+
+
+// 🖼️ FUNÇÃO PARA MOSTRAR IMAGEM
+function appendImage(url){
+
+const div = document.createElement('div')
+
+div.className = "msg bot"
+
+const img = document.createElement('img')
+
+img.src = url
+img.style.maxWidth = "300px"
+img.style.borderRadius = "10px"
+img.style.marginTop = "5px"
+
+div.appendChild(img)
 
 const chat = document.getElementById('chat')
 
