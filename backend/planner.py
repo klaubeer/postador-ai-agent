@@ -74,7 +74,7 @@ Mensagem do usuário:
             state[key] = value
 
     return {
-        "action": decision["action"],
-        "message": decision["message"],
+        "action": decision.get("action", "ask_user"),
+        "message": decision.get("message", "Ok."),
         "state": state
-    }
+}
