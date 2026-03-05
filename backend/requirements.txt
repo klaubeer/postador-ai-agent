@@ -3,3 +3,4 @@ uvicorn
 openai>=1.30.0
 langgraph
 langchain-core
+faiss-cpu
