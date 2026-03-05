@@ -61,19 +61,23 @@ def chat(req: ChatRequest):
 
     if state.get("awaiting_image_approval"):
 
-        if any(x in msg for x in ["gerar imagem", "gerar", "imagem"]):
+        if "gerar imagem" in msg:
 
             from backend.image_gen import generate_image
 
             prompt = state.get("image_prompt")
 
             if not prompt:
-                return {"message": "Erro: prompt de imagem não encontrado."}
+                return {
+                    "message": "Erro: prompt de imagem não encontrado."
+                }
 
             image_url = generate_image(prompt)
 
             state["image_url"] = image_url
             state["awaiting_image_approval"] = False
+
+            sessions[req.session_id] = state
 
             return {
                 "image": image_url
@@ -102,9 +106,12 @@ def chat(req: ChatRequest):
 
         result = graph.invoke(state)
 
+        # salva novo estado na sessão
+        sessions[req.session_id] = result
+
         return {
             "post": result["post_final"],
-            "state": state
+            "state": result
         }
 
     return {
