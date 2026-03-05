@@ -10,6 +10,49 @@ client = OpenAI()
 # memória simples por sessão
 sessions = {}
 
+# -------------------------
+# CAPTURAR OBJETIVO
+# -------------------------
+
+def node_capturar_objetivo(state: AgentState):
+
+    mensagem = state.get("message", "").lower()
+
+    if not state.get("objetivo"):
+
+        objetivos_validos = [
+            "vender",
+            "engajar",
+            "educar",
+            "autoridade",
+            "divulgar"
+        ]
+
+        for obj in objetivos_validos:
+            if obj in mensagem:
+                state["objetivo"] = obj
+                break
+
+    return state
+
+
+# -------------------------
+# PERGUNTAR OBJETIVO
+# -------------------------
+
+def node_perguntar_objetivo(state: AgentState):
+
+    return {
+        "resposta": """
+Qual é o objetivo do post?
+
+Você pode responder algo como:
+(vender, engajar, educar, gerar autoridade, divulgar produto)
+
+Qual é o seu objetivo?
+"""
+    }
+
 
 # -------------------------
 # PLANNER (LLM decide intenção)
@@ -19,11 +62,13 @@ def node_planner(state: AgentState):
 
     history = state.get("history", [])
 
-    messages = history + [
+    messages = [
         {
             "role": "system",
             "content": """
 Você é um assistente de social media.
+
+O objetivo do post é: """ + str(state.get("objetivo", "")) + """
 
 Analise a conversa e identifique a intenção do usuário.
 
@@ -33,19 +78,12 @@ gerar_ideias
 gerar_legenda
 conversa
 
-IMPORTANTE:
-
-Se o usuário estiver corrigindo ou criticando
-a resposta anterior (ex: "não era isso", "não queria isso",
-"isso está errado"), considere que ele ainda quer
-GERAR IDEIAS.
-
 Responda apenas JSON:
 
 { "intent": "..." }
 """
         }
-    ]
+    ] + history
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -75,6 +113,8 @@ def node_gerar_ideias(state: AgentState):
     return {
         "resposta": f"""
 Aqui vão 3 ideias de post:
+
+Objetivo: {state.get("objetivo","")}
 
 {result["ideias"]}
 """
@@ -115,7 +155,19 @@ def node_conversa(state: AgentState):
 
 
 # -------------------------
-# ROUTER
+# ROUTER INICIAL
+# -------------------------
+
+def router_inicio(state: AgentState):
+
+    if not state.get("objetivo"):
+        return "perguntar_objetivo"
+
+    return "planner"
+
+
+# -------------------------
+# ROUTER PRINCIPAL
 # -------------------------
 
 def router(state: AgentState):
@@ -137,18 +189,27 @@ def router(state: AgentState):
 
 builder = StateGraph(AgentState)
 
+builder.add_node("capturar_objetivo", node_capturar_objetivo)
+builder.add_node("perguntar_objetivo", node_perguntar_objetivo)
+
 builder.add_node("planner", node_planner)
 builder.add_node("gerar_ideias", node_gerar_ideias)
 builder.add_node("gerar_legenda", node_gerar_legenda)
 builder.add_node("conversa", node_conversa)
 
-builder.set_entry_point("planner")
+builder.set_entry_point("capturar_objetivo")
+
+builder.add_conditional_edges(
+    "capturar_objetivo",
+    router_inicio
+)
 
 builder.add_conditional_edges(
     "planner",
     router
 )
 
+builder.add_edge("perguntar_objetivo", END)
 builder.add_edge("gerar_ideias", END)
 builder.add_edge("gerar_legenda", END)
 builder.add_edge("conversa", END)
@@ -162,7 +223,6 @@ graph = builder.compile()
 
 def agent_graph_chat(session_id, message):
 
-    # primeira vez que a sessão aparece
     if session_id not in sessions:
 
         mensagem_boas_vindas = """
@@ -170,13 +230,11 @@ Olá! Eu sou o Postador 🤖
 
 Posso ajudar você a criar conteúdo para redes sociais.
 
-Exemplos do que você pode pedir:
+Antes de começarmos:
 
-• "Quero ideias de post para Instagram sobre meu novo produto"
-• "Crie uma legenda para um post sobre boas práticas de TI"
-• "Me ajude a criar conteúdo para clínica estética"
+Qual é o objetivo do post?
 
-O que você gostaria de criar hoje?
+(vender, engajar, educar, gerar autoridade, divulgar produto)
 """
 
         sessions[session_id] = {
@@ -186,14 +244,14 @@ O que você gostaria de criar hoje?
                     "role": "assistant",
                     "content": mensagem_boas_vindas
                 }
-            ]
+            ],
+            "objetivo": None
         }
 
         return mensagem_boas_vindas
 
     state = sessions[session_id]
 
-    # adiciona mensagem do usuário no histórico
     state["history"].append({
         "role": "user",
         "content": message
@@ -205,7 +263,6 @@ O que você gostaria de criar hoje?
 
     resposta = result.get("resposta", "Não consegui gerar resposta.")
 
-    # salva resposta no histórico
     state["history"].append({
         "role": "assistant",
         "content": resposta
