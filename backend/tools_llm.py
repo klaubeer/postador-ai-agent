@@ -1,11 +1,17 @@
 from openai import OpenAI
-
+from rag.retriever import search
 client = OpenAI()
 
 
 def gerar_ideias_tool(state):
 
+    contexto = search(state.get("message", ""))
+
     prompt = f"""
+Use também o conhecimento abaixo sobre social media:
+
+{contexto}
+
 Crie 3 ideias de post para redes sociais.
 
 Plataforma: {state.get("plataforma")}
@@ -33,7 +39,13 @@ As ideias devem conter:
 
 def gerar_legenda_tool(state):
 
-    prompt = f"""
+    contexto = search(state.get("message", ""))
+
+ prompt = f"""
+Use também este conhecimento de marketing:
+
+{contexto}
+
 Crie uma legenda para redes sociais.
 
 Plataforma: {state.get("plataforma")}
