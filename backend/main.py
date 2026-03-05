@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from agent_graph import graph
+from backend.agent_graph import graph
 
 app = FastAPI()
 
