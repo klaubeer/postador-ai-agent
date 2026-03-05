@@ -96,17 +96,15 @@ cursor:pointer;
 
 <div style="padding:10px;background:#f9f9f9;text-align:center;font-size:14px">
 
-👋 Olá! Eu sou <b>O Postador 🤖</b><br>
-Digite Oi e vamos lá!
-
+<div id="welcome"></div>
 </div>
 
 <div id="input-area">
 
-<input id="msg" placeholder=" "
+<input id="msg" placeholder=""
 onkeydown="if(event.key==='Enter') enviar()">
 
-<button onclick="enviar()">Enviar</button>
+<button id="sendBtn" onclick="enviar()"></button>
 
 </div>
 
