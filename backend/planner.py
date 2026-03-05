@@ -28,7 +28,7 @@ Instagram, Facebook, TikTok, LinkedIn, X ou YouTube Shorts
 
 Se faltar informação, pergunte naturalmente.
 
-Responda APENAS em JSON:
+Responda APENAS em JSON neste formato:
 
 {
  "action": "ask_user | run_post_pipeline",
@@ -43,12 +43,31 @@ Responda APENAS em JSON:
 """
 
 
+def extract_json(text):
+    """
+    Extrai JSON válido de uma resposta do LLM,
+    mesmo que venha com texto antes/depois.
+    """
+
+    text = text.strip()
+
+    start = text.find("{")
+    end = text.rfind("}") + 1
+
+    if start == -1 or end == -1:
+        raise ValueError("JSON não encontrado")
+
+    json_str = text[start:end]
+
+    return json.loads(json_str)
+
+
 def planner(user_input, state):
 
     prompt = f"""
 {SYSTEM_PROMPT}
 
-Estado atual:
+Estado atual da conversa:
 {state}
 
 Mensagem do usuário:
@@ -58,17 +77,24 @@ Mensagem do usuário:
     result = llm(prompt)
 
     try:
-        decision = json.loads(result)
-    except:
+        decision = extract_json(result)
+
+    except Exception as e:
+
+        print("Planner JSON error:", e)
+        print("LLM response:", result)
+
         decision = {
             "action": "ask_user",
             "message": "Pode me contar um pouco mais sobre o post que você quer criar?",
             "state_updates": {}
         }
 
-    # atualiza state
-    for k, v in decision.get("state_updates", {}).items():
-        if v:
+    # atualiza state com segurança
+    updates = decision.get("state_updates", {})
+
+    for k, v in updates.items():
+        if v and v != "null":
             state[k] = v
 
     return decision, state
