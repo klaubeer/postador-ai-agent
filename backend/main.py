@@ -54,6 +54,7 @@ def chat(req: ChatRequest):
     state = get_session_state(req.session_id)
 
     decision = planner(req.message, state)
+    state = decision["state"]
 
     # -------- validação antes do pipeline --------
 
