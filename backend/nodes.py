@@ -140,6 +140,5 @@ def format_post(state):
 
 Digite **gerar imagem** para criar a imagem.
 """
-"""
 
     return state
