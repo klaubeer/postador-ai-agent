@@ -11,50 +11,85 @@ client = OpenAI()
 sessions = {}
 
 # -------------------------
-# CAPTURAR OBJETIVO
+# EXTRACT BRIEFING (LLM)
 # -------------------------
 
-def node_capturar_objetivo(state: AgentState):
+def node_extract_briefing(state: AgentState):
 
-    mensagem = state.get("message", "").lower()
+    message = state.get("message")
 
-    if not state.get("objetivo"):
+    briefing = {
+        "objetivo": state.get("objetivo"),
+        "produto": state.get("produto"),
+        "publico": state.get("publico"),
+        "rede_social": state.get("rede_social")
+    }
 
-        objetivos_validos = [
-            "vender",
-            "engajar",
-            "educar",
-            "autoridade",
-            "divulgar"
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": """
+You extract social media briefing info.
+
+Return JSON only.
+
+Fields:
+
+objetivo
+produto
+publico
+rede_social
+
+If not mentioned return null.
+
+Examples:
+
+User: I want to sell mugs on Instagram
+
+{
+ "objetivo":"vender",
+ "produto":"canecas",
+ "publico":null,
+ "rede_social":"instagram"
+}
+
+User: promoting my AI course to developers on linkedin
+
+{
+ "objetivo":"vender",
+ "produto":"curso de IA",
+ "publico":"desenvolvedores",
+ "rede_social":"linkedin"
+}
+"""
+            },
+            {
+                "role": "user",
+                "content": f"""
+Current briefing:
+
+{briefing}
+
+User message:
+
+{message}
+
+Update the briefing.
+"""
+            }
         ]
+    )
 
-        for obj in objetivos_validos:
-            if obj in mensagem:
-                state["objetivo"] = obj
-                break
-
-    return state
-
-
-# -------------------------
-# CAPTURAR BRIEFING
-# -------------------------
-
-def node_capturar_briefing(state: AgentState):
-
-    mensagem = state.get("message", "").lower()
-
-    if not state.get("produto"):
-        state["produto"] = mensagem
+    try:
+        data = json.loads(response.choices[0].message.content)
+    except:
         return state
 
-    if not state.get("publico"):
-        state["publico"] = mensagem
-        return state
-
-    if not state.get("rede_social"):
-        state["rede_social"] = mensagem
-        return state
+    for k, v in data.items():
+        if v:
+            state[k] = v
 
     return state
 
@@ -87,7 +122,11 @@ def node_perguntar_objetivo(state: AgentState):
 What is the goal of the post?
 
 Examples:
-(sell, engage, educate, authority, promote product)
+• sell
+• engage
+• educate
+• build authority
+• promote product
 """
         }
 
@@ -95,64 +134,63 @@ Examples:
         "resposta": """
 Qual é o objetivo do post?
 
-Você pode responder algo como:
-(vender, engajar, educar, gerar autoridade, divulgar produto)
+Exemplos:
+• vender
+• engajar
+• educar
+• gerar autoridade
+• divulgar produto
 """
     }
 
 
 # -------------------------
-# PERGUNTAR PRODUTO
+# MISSING INFO
 # -------------------------
 
-def node_perguntar_produto(state: AgentState):
+def node_missing_info(state: AgentState):
 
     lang = state.get("language", "pt")
 
-    if lang == "en":
-        return {
-            "resposta": "What product or service do you want to promote?"
-        }
+    missing = []
 
-    return {
-        "resposta": "Qual produto ou serviço você quer divulgar?"
-    }
+    if not state.get("produto"):
+        missing.append("produto")
 
+    if not state.get("publico"):
+        missing.append("público")
 
-# -------------------------
-# PERGUNTAR PUBLICO
-# -------------------------
+    if not state.get("rede_social"):
+        missing.append("rede social")
 
-def node_perguntar_publico(state: AgentState):
-
-    lang = state.get("language", "pt")
+    if not missing:
+        return state
 
     if lang == "en":
-        return {
-            "resposta": "Who is the target audience?"
-        }
 
-    return {
-        "resposta": "Quem é o público-alvo?"
-    }
+        pergunta = f"""
+Great. I understood the goal is **{state.get("objetivo")}**.
 
+To generate the post I just need:
 
-# -------------------------
-# PERGUNTAR REDE SOCIAL
-# -------------------------
+{", ".join(missing)}
 
-def node_perguntar_rede(state: AgentState):
+You can answer everything in one sentence.
+"""
 
-    lang = state.get("language", "pt")
+    else:
 
-    if lang == "en":
-        return {
-            "resposta": "Which social network will this post be for?"
-        }
+        pergunta = f"""
+Perfeito. Entendi que o objetivo é **{state.get("objetivo")}**.
 
-    return {
-        "resposta": "Para qual rede social é o post? (Instagram, LinkedIn, etc)"
-    }
+Para criar o post preciso só de mais algumas coisas:
+
+{", ".join(missing)}
+
+Você pode responder tudo em uma frase se quiser.
+"""
+
+    return {"resposta": pergunta}
 
 
 # -------------------------
@@ -290,29 +328,19 @@ USER QUESTION:
 
 
 # -------------------------
-# ROUTER INICIAL
+# ROUTERS
 # -------------------------
 
-def router_inicio(state: AgentState):
+def router_briefing(state: AgentState):
 
     if not state.get("objetivo"):
         return "perguntar_objetivo"
 
-    if not state.get("produto"):
-        return "perguntar_produto"
-
-    if not state.get("publico"):
-        return "perguntar_publico"
-
-    if not state.get("rede_social"):
-        return "perguntar_rede"
+    if not state.get("produto") or not state.get("publico") or not state.get("rede_social"):
+        return "missing_info"
 
     return "planner"
 
-
-# -------------------------
-# ROUTER PRINCIPAL
-# -------------------------
 
 def router(state: AgentState):
 
@@ -333,29 +361,24 @@ def router(state: AgentState):
 
 builder = StateGraph(AgentState)
 
-builder.add_node("capturar_objetivo", node_capturar_objetivo)
-builder.add_node("capturar_briefing", node_capturar_briefing)
-
+builder.add_node("extract_briefing", node_extract_briefing)
 builder.add_node("rag", node_rag)
 
 builder.add_node("perguntar_objetivo", node_perguntar_objetivo)
-builder.add_node("perguntar_produto", node_perguntar_produto)
-builder.add_node("perguntar_publico", node_perguntar_publico)
-builder.add_node("perguntar_rede", node_perguntar_rede)
+builder.add_node("missing_info", node_missing_info)
 
 builder.add_node("planner", node_planner)
 builder.add_node("gerar_ideias", node_gerar_ideias)
 builder.add_node("gerar_legenda", node_gerar_legenda)
 builder.add_node("conversa", node_conversa)
 
-builder.set_entry_point("capturar_objetivo")
+builder.set_entry_point("extract_briefing")
 
-builder.add_edge("capturar_objetivo", "capturar_briefing")
-builder.add_edge("capturar_briefing", "rag")
+builder.add_edge("extract_briefing", "rag")
 
 builder.add_conditional_edges(
     "rag",
-    router_inicio
+    router_briefing
 )
 
 builder.add_conditional_edges(
@@ -363,10 +386,8 @@ builder.add_conditional_edges(
     router
 )
 
+builder.add_edge("missing_info", END)
 builder.add_edge("perguntar_objetivo", END)
-builder.add_edge("perguntar_produto", END)
-builder.add_edge("perguntar_publico", END)
-builder.add_edge("perguntar_rede", END)
 
 builder.add_edge("gerar_ideias", "gerar_legenda")
 builder.add_edge("gerar_legenda", END)
@@ -384,22 +405,23 @@ def agent_graph_chat(session_id, message, language="pt"):
     if session_id not in sessions:
 
         if language == "en":
+
             mensagem_boas_vindas = """
 Hello! I'm The Postador 🤖
 
-I can help you create social media content.
+I help you create social media content.
 
-First:
-
-What is the goal of your post?
+Please, tell me what would you like to post.
 """
+
         else:
+
             mensagem_boas_vindas = """
 Olá! Eu sou o Postador 🤖
 
-Posso ajudar você a criar conteúdo para redes sociais.
+Vou te ajudar a criar conteúdo para redes sociais.
 
-Qual é o objetivo do post?
+Me diga, o que você quer postar?
 """
 
         sessions[session_id] = {
