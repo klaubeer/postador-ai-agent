@@ -71,29 +71,27 @@ Qual é o seu objetivo?
 
 
 # -------------------------
-# PLANNER (LLM decide intenção)
+# PLANNER
 # -------------------------
 
 def node_planner(state: AgentState):
 
     history = state.get("history", [])[-20:]
-
     contexto = state.get("contexto_rag", "")
 
     messages = [
-    {
-        "role": "system",
-        "content": f"""
+        {
+            "role": "system",
+            "content": f"""
 Você é um assistente de social media.
 
-CONTEXTO DO CONHECIMENTO:
+CONTEXTO DE CONHECIMENTO:
 
 {contexto}
 
-Use este contexto como fonte principal de verdade.
-Se a pergunta do usuário puder ser respondida usando o contexto, responda usando essas informações.
+Use esse contexto para entender melhor a conversa.
 
-Analise a conversa e identifique a intenção do usuário.
+Sua tarefa é identificar a intenção do usuário.
 
 Possíveis intenções:
 
@@ -105,8 +103,8 @@ Responda apenas JSON:
 
 {{ "intent": "..." }}
 """
-    }
-] + history
+        }
+    ] + history
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -169,29 +167,36 @@ Legenda sugerida:
 
 def node_conversa(state: AgentState):
 
+    contexto = state.get("contexto_rag", "")
+    pergunta = state.get("message", "")
     history = state.get("history", [])
 
-    contexto = state.get("contexto_rag", "")
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": f"""
+    messages = [
+        {
+            "role": "system",
+            "content": """
 Você é o assistente Postador.
-
-CONTEXTO DO CONHECIMENTO:
+Responda de forma clara e útil.
+"""
+        },
+        {
+            "role": "user",
+            "content": f"""
+Contexto interno:
 
 {contexto}
 
-Se a pergunta do usuário estiver relacionada ao contexto acima,
-responda usando essas informações.
+Pergunta do usuário:
+{pergunta}
 
-Se o contexto contiver a resposta, ele tem prioridade sobre seu conhecimento geral.
+Se a resposta estiver no contexto, utilize essas informações.
 """
-            }
-        ] + history
+        }
+    ] + history
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages
     )
 
     return {
