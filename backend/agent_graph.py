@@ -8,7 +8,6 @@ import json
 
 client = OpenAI()
 
-# memória simples por sessão
 sessions = {}
 
 # -------------------------
@@ -38,7 +37,7 @@ def node_capturar_objetivo(state: AgentState):
 
 
 # -------------------------
-# RAG - BUSCAR CONTEXTO
+# RAG
 # -------------------------
 
 def node_rag(state: AgentState):
@@ -50,6 +49,33 @@ def node_rag(state: AgentState):
     state["contexto_rag"] = contexto
 
     return state
+
+
+# -------------------------
+# VERIFICAR SE RAG ACHOU ALGO
+# -------------------------
+
+def router_rag(state: AgentState):
+
+    contexto = state.get("contexto_rag", "")
+
+    if contexto and len(contexto.strip()) > 20:
+        return "responder_rag"
+
+    return "router_inicio"
+
+
+# -------------------------
+# RESPONDER DIRETO COM RAG
+# -------------------------
+
+def node_responder_rag(state: AgentState):
+
+    contexto = state.get("contexto_rag", "")
+
+    return {
+        "resposta": contexto
+    }
 
 
 # -------------------------
@@ -77,21 +103,14 @@ Qual é o seu objetivo?
 def node_planner(state: AgentState):
 
     history = state.get("history", [])[-20:]
-    contexto = state.get("contexto_rag", "")
 
     messages = [
         {
             "role": "system",
-            "content": f"""
+            "content": """
 Você é um assistente de social media.
 
-CONTEXTO DE CONHECIMENTO:
-
-{contexto}
-
-Use esse contexto para entender melhor a conversa.
-
-Sua tarefa é identificar a intenção do usuário.
+Identifique a intenção do usuário.
 
 Possíveis intenções:
 
@@ -101,7 +120,7 @@ conversa
 
 Responda apenas JSON:
 
-{{ "intent": "..." }}
+{ "intent": "..." }
 """
         }
     ] + history
@@ -124,7 +143,7 @@ Responda apenas JSON:
 
 
 # -------------------------
-# EXECUTOR IDEIAS
+# GERAR IDEIAS
 # -------------------------
 
 def node_gerar_ideias(state: AgentState):
@@ -137,7 +156,7 @@ def node_gerar_ideias(state: AgentState):
 
 
 # -------------------------
-# EXECUTOR LEGENDA
+# GERAR LEGENDA
 # -------------------------
 
 def node_gerar_legenda(state: AgentState):
@@ -167,36 +186,16 @@ Legenda sugerida:
 
 def node_conversa(state: AgentState):
 
-    contexto = state.get("contexto_rag", "")
-    pergunta = state.get("message", "")
     history = state.get("history", [])
-
-    messages = [
-        {
-            "role": "system",
-            "content": """
-Você é o assistente Postador.
-Responda de forma clara e útil.
-"""
-        },
-        {
-            "role": "user",
-            "content": f"""
-Contexto interno:
-
-{contexto}
-
-Pergunta do usuário:
-{pergunta}
-
-Se a resposta estiver no contexto, utilize essas informações.
-"""
-        }
-    ] + history
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=messages
+        messages=[
+            {
+                "role": "system",
+                "content": "Você é o assistente Postador."
+            }
+        ] + history
     )
 
     return {
@@ -205,7 +204,7 @@ Se a resposta estiver no contexto, utilize essas informações.
 
 
 # -------------------------
-# ROUTER INICIAL
+# ROUTER INICIO
 # -------------------------
 
 def router_inicio(state: AgentState):
@@ -241,6 +240,8 @@ builder = StateGraph(AgentState)
 
 builder.add_node("capturar_objetivo", node_capturar_objetivo)
 builder.add_node("rag", node_rag)
+builder.add_node("responder_rag", node_responder_rag)
+
 builder.add_node("perguntar_objetivo", node_perguntar_objetivo)
 
 builder.add_node("planner", node_planner)
@@ -254,6 +255,13 @@ builder.add_edge("capturar_objetivo", "rag")
 
 builder.add_conditional_edges(
     "rag",
+    router_rag
+)
+
+builder.add_edge("responder_rag", END)
+
+builder.add_conditional_edges(
+    "router_inicio",
     router_inicio
 )
 
@@ -271,7 +279,7 @@ graph = builder.compile()
 
 
 # -------------------------
-# FUNÇÃO USADA PELO FASTAPI
+# FASTAPI
 # -------------------------
 
 def agent_graph_chat(session_id, message):
