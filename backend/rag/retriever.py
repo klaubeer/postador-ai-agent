@@ -1,25 +1,34 @@
 import pickle
 import numpy as np
 from openai import OpenAI
-import os
 import faiss
- 
+from pathlib import Path
+
 client = OpenAI()
 
+# Caminho seguro baseado no próprio arquivo
+BASE_DIR = Path(__file__).resolve().parent
 
+index_path = BASE_DIR / "vector.index"
+texts_path = BASE_DIR / "texts.pkl"
 
 index = None
+texts = []
 
-index_path = "rag/vector.index"
+# Carrega o FAISS se existir
+if index_path.exists():
+    index = faiss.read_index(str(index_path))
 
-if os.path.exists(index_path):
-    index = faiss.read_index(index_path)
-
-with open("rag/texts.pkl", "rb") as f:
-    texts = pickle.load(f)
+# Carrega os textos se existir
+if texts_path.exists():
+    with open(texts_path, "rb") as f:
+        texts = pickle.load(f)
 
 
 def search(query):
+
+    if index is None or not texts:
+        return "RAG não carregado."
 
     emb = client.embeddings.create(
         model="text-embedding-3-small",
@@ -33,6 +42,7 @@ def search(query):
     results = []
 
     for idx in I[0]:
-        results.append(texts[idx])
+        if idx < len(texts):
+            results.append(texts[idx])
 
     return "\n".join(results)
