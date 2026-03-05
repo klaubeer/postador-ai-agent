@@ -171,29 +171,50 @@ def node_conversa(state: AgentState):
     pergunta = state.get("message", "")
     history = state.get("history", [])
 
-    messages = [
-        {
-            "role": "system",
-            "content": """
-Você é o assistente Postador.
-Responda de forma clara e útil.
+messages = [
+    {
+        "role": "system",
+        "content": """
+Você é o assistente Postador, especialista em criação de conteúdo para redes sociais.
+
+Você possui acesso a um CONTEXTO DE CONHECIMENTO interno da empresa.
+
+REGRAS IMPORTANTES:
+
+1. O CONTEXTO fornecido contém informações oficiais da empresa.
+2. Se o usuário perguntar sobre:
+   - empresa
+   - fundador
+   - telefone
+   - email
+   - endereço
+   - serviços
+   - site
+   - informações institucionais
+
+   você DEVE usar os dados presentes no contexto.
+
+3. Não invente informações.
+4. Se a informação existir no contexto, use exatamente esses dados.
+5. Se não existir no contexto, responda normalmente com seu conhecimento geral.
+
+Responda sempre de forma clara e direta.
 """
-        },
-        {
-            "role": "user",
-            "content": f"""
-Contexto interno:
+    },
+    {
+        "role": "user",
+        "content": f"""
+CONTEXTO DA EMPRESA:
 
 {contexto}
 
-Pergunta do usuário:
+PERGUNTA DO USUÁRIO:
 {pergunta}
 
-Se a resposta estiver no contexto, utilize essas informações.
+Se a resposta estiver no contexto, utilize essas informações para responder.
 """
-        }
-    ] + history
-
+    }
+] + history
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=messages
