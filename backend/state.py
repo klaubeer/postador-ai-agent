@@ -11,10 +11,10 @@ class AgentState(TypedDict, total=False):
     ideias: Optional[str]
     melhor_ideia: Optional[str]
     legenda: Optional[str]
+
     image_prompt: Optional[str]
+    image_url: Optional[str]
+    awaiting_image_approval: Optional[bool]
+
     hashtags: Optional[str]
     post_final: Optional[str]
-
-state["image_prompt"] = None
-state["image_url"] = None
-state["awaiting_image_approval"] = False
