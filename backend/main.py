@@ -79,3 +79,19 @@ def chat(req: ChatRequest):
         "message": decision["message"],
         "state": state
     }
+
+
+if state.get("awaiting_image_approval"):
+
+    if "gerar imagem" in req.message.lower():
+
+        from backend.image_gen import generate_image
+
+        image_url = generate_image(state["image_prompt"])
+
+        state["image_url"] = image_url
+        state["awaiting_image_approval"] = False
+
+        return {
+            "image": image_url
+        }
