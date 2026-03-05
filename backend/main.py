@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.agent_graph import graph
 from backend.planner import planner
 
+
 app = FastAPI()
 
 app.add_middleware(
@@ -15,17 +16,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# memória de sessões
+
+# -------------------------
+# sessão simples em memória
+# -------------------------
+
 sessions = {}
 
 
-class ChatRequest(BaseModel):
-    message: str
-    session_id: str
-
-
-def get_session_state(session_id):
-
+def get_session_state(session_id: str):
     if session_id not in sessions:
         sessions[session_id] = {
             "objetivo": None,
@@ -33,38 +32,49 @@ def get_session_state(session_id):
             "tema": None,
             "publico": None
         }
-
     return sessions[session_id]
 
 
-@app.post("/post")
-def create_post(req: ChatRequest):
+# -------------------------
+# request schema
+# -------------------------
+
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
+
+
+# -------------------------
+# endpoint
+# -------------------------
+
+@app.post("/chat")
+def chat(req: ChatRequest):
 
     state = get_session_state(req.session_id)
 
-    # planner decide próximo passo
-    decision, state = planner(req.message, state)
+    decision = planner(req.message, state)
 
-    # salva estado atualizado
-    sessions[req.session_id] = state
+    # -------- validação antes do pipeline --------
 
-    if decision["action"] == "ask_user":
-        return {
-            "reply": decision["message"]
-        }
+    required = ["objetivo", "plataforma", "tema"]
 
     if decision["action"] == "run_post_pipeline":
+        if not all(state.get(k) for k in required):
+            return {
+                "message": "Preciso de mais algumas informações antes de gerar o post."
+            }
 
         result = graph.invoke(state)
 
-        # atualizar sessão com resultado final
-        sessions[req.session_id] = result
-
         return {
-            "post": result["post_final"]
+            "post": result["post_final"],
+            "state": state
         }
 
-    # fallback de segurança
+    # --------------------------------------------
+
     return {
-        "reply": "Não consegui entender. Pode reformular?"
+        "message": decision["message"],
+        "state": state
     }
