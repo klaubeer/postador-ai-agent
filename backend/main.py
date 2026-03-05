@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from backend.agent_graph import graph
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
