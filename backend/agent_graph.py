@@ -60,7 +60,7 @@ Qual é o seu objetivo?
 
 def node_planner(state: AgentState):
 
-    history = state.get("history", [])
+    history = state.get("history", [])[-20:]
 
     messages = [
         {
@@ -108,17 +108,13 @@ Responda apenas JSON:
 
 def node_gerar_ideias(state: AgentState):
 
-    result = gerar_ideias_tool(state)
+    ideias = gerar_ideias_tool(state)
 
     return {
-        "resposta": f"""
-Aqui vão 3 ideias de post:
+    "ideias": ideias["ideias"]
+}
 
-Objetivo: {state.get("objetivo","")}
 
-{result["ideias"]}
-"""
-    }
 
 
 # -------------------------
@@ -127,10 +123,22 @@ Objetivo: {state.get("objetivo","")}
 
 def node_gerar_legenda(state: AgentState):
 
-    result = gerar_legenda_tool(state)
+    legenda = gerar_legenda_tool(state)
+
+    resposta = f"""
+Aqui vão 3 ideias de post:
+
+{state.get("ideias")}
+
+---
+
+Legenda sugerida:
+
+{legenda["legenda"]}
+"""
 
     return {
-        "resposta": result["legenda"]
+        "resposta": resposta
     }
 
 
@@ -210,7 +218,7 @@ builder.add_conditional_edges(
 )
 
 builder.add_edge("perguntar_objetivo", END)
-builder.add_edge("gerar_ideias", END)
+builder.add_edge("gerar_ideias", "gerar_legenda")
 builder.add_edge("gerar_legenda", END)
 builder.add_edge("conversa", END)
 
