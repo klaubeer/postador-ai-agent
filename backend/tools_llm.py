@@ -1,11 +1,16 @@
-from llm import gerar_ideias_post
-
 def gerar_ideias_tool(state):
 
-    ideias = gerar_ideias_post(
-        state["tema"],
-        state["plataforma"],
-        state["objetivo"]
+    prompt = f"""
+Crie 3 ideias de post.
+
+Plataforma: {state.get("plataforma")}
+Tema: {state.get("tema")}
+Objetivo: {state.get("objetivo")}
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}]
     )
 
-    return {"ideias": ideias}
+    return {"ideias": response.choices[0].message.content}
