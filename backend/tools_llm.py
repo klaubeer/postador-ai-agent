@@ -58,3 +58,16 @@ A legenda deve conter:
     return {
         "legenda": response.choices[0].message.content
     }
+
+from rag.retriever import search
+
+
+def buscar_conhecimento_tool(state):
+
+    query = state.get("message")
+
+    contexto = search(query)
+
+    return {
+        "contexto": contexto
+    }
