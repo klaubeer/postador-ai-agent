@@ -4,14 +4,17 @@ from backend.llm import llm
 def generate_ideas(state):
 
     prompt = f"""
-Crie 5 ideias de post para redes sociais.
+Crie 3 ideias de post curtas.
 
 Objetivo: {state.get("objetivo")}
 Plataforma: {state.get("plataforma")}
 Tema: {state.get("tema")}
 Público: {state.get("publico")}
 
-Retorne as ideias de forma clara e numerada.
+Regras:
+- cada ideia no máximo 8 palavras
+- sem explicação
+- apenas lista numerada
 """
 
     ideias = llm(prompt)
@@ -23,14 +26,18 @@ Retorne as ideias de forma clara e numerada.
 
 def select_best_idea(state):
 
-    prompt = f"""
-Escolha a melhor ideia para viralizar.
+   prompt = f"""
+Crie 3 ideias de post curtas.
 
-Ideias:
+Objetivo: {state.get("objetivo")}
+Plataforma: {state.get("plataforma")}
+Tema: {state.get("tema")}
+Público: {state.get("publico")}
 
-{state.get("ideias")}
-
-Explique brevemente e retorne apenas a ideia escolhida.
+Regras:
+- cada ideia no máximo 8 palavras
+- sem explicação
+- apenas lista numerada
 """
 
     melhor = llm(prompt)
@@ -42,8 +49,8 @@ Explique brevemente e retorne apenas a ideia escolhida.
 
 def generate_caption(state):
 
-    prompt = f"""
-Crie uma legenda envolvente para redes sociais.
+  prompt = f"""
+Crie legenda curta.
 
 Ideia:
 {state.get("melhor_ideia")}
@@ -51,7 +58,9 @@ Ideia:
 Plataforma:
 {state.get("plataforma")}
 
-Inclua um CTA forte.
+Regras:
+- máximo 1 frase
+- incluir CTA
 """
 
     legenda = llm(prompt)
@@ -63,14 +72,15 @@ Inclua um CTA forte.
 
 def generate_image_prompt(state):
 
-    prompt = f"""
-Crie um prompt detalhado para gerar uma imagem com IA.
+   prompt = f"""
+Crie prompt de imagem curto.
 
-Baseado nesta ideia de post:
-
+Ideia:
 {state.get("melhor_ideia")}
 
-Descreva a cena visual claramente.
+Regras:
+- máximo 15 palavras
+- estilo visual claro
 """
 
     image_prompt = llm(prompt)
@@ -88,8 +98,8 @@ def generate_hashtags(state):
         state["hashtags"] = ""
         return state
 
-    prompt = f"""
-Crie hashtags relevantes para este post.
+  prompt = f"""
+Crie hashtags para este post.
 
 Ideia:
 {state.get("melhor_ideia")}
@@ -97,7 +107,9 @@ Ideia:
 Plataforma:
 {plataforma}
 
-Retorne apenas hashtags.
+Regras:
+- máximo 5 hashtags
+- retorne apenas hashtags
 """
 
     hashtags = llm(prompt)
