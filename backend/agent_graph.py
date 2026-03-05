@@ -6,7 +6,7 @@ from rag.retriever import search
 from openai import OpenAI
 import json
 
-client = OpenAI()
+client = OpenAI() 
 
 # memória simples por sessão
 sessions = {}
