@@ -15,31 +15,38 @@ Regras:
 
 1. Se faltar alguma informação → pergunte ao usuário.
 2. Se já tiver informações suficientes → responda com action="run_post_pipeline".
-3. Nunca gere o post aqui. Apenas prepare os dados para o pipeline.
+3. Nunca gere o post aqui.
 
 Responda SOMENTE em JSON neste formato:
 
 {
- "action": "ask_user | run_post_pipeline",
- "message": "mensagem para o usuário",
+ "action": "ask_user",
+ "message": "Qual é o público-alvo do post?",
  "state_updates": {
-   "objetivo": "...",
-   "plataforma": "...",
-   "tema": "...",
-   "publico": "..."
+   "objetivo": "vender",
+   "plataforma": "LinkedIn",
+   "tema": "agentes de IA",
+   "publico": null
  }
 }
 """
 
 
 def extract_json(text: str):
-    """
-    Tenta extrair JSON mesmo que o modelo retorne texto extra.
-    """
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    return json.loads(text[start:end])
 
+    try:
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        return json.loads(text[start:end])
+    except Exception:
+        print("LLM retornou JSON inválido:")
+        print(text)
+
+        return {
+            "action": "ask_user",
+            "message": "Desculpe, houve um erro. Pode repetir?",
+            "state_updates": {}
+        }
 
 def planner(user_input: str, state: dict):
 
