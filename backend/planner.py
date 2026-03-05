@@ -64,10 +64,7 @@ Mensagem do usuário:
 {user_input}
 """
 
-    result = llm(
-        system_prompt=SYSTEM_PROMPT,
-        user_prompt=prompt
-    )
+    result = llm(SYSTEM_PROMPT + "\n\n" + prompt)
 
     decision = extract_json(result)
 
