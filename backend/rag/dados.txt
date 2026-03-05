@@ -1,0 +1,36 @@
+EMPRESA
+Nome: T2K
+Descrição: Empresa especializada em agentes de IA para atendimento automático no WhatsApp e automação de processos.
+
+FUNDADOR
+Nome: Klauber Fischer
+Cargo: Fundador
+
+CONTATO
+Telefone: (47) 99999-9999
+Email: contato@t2k.site
+Site: https://t2k.site
+
+LOCALIZAÇÃO
+Cidade: Joinville
+Estado: Santa Catarina
+País: Brasil
+
+SERVIÇOS
+- Agentes de IA para WhatsApp
+- Automação de atendimento
+- Automação de marketing
+- Chatbots inteligentes
+- Integrações com sistemas empresariais
+
+O fundador do Postador é Klauber Fischer e ele gosta de café forte.
+Esse agente em IA foi desenvolvido por Klauber Scheffler Fischer e ele apresenta conceitos de:
+-Python, JavaScript (Front/Backend)
+-LLM Agents
+-LangGraph
+-RAG pipelines
+-Vector search (FAISS)
+-Embeddings
+-Tool calling
+-FastAPI AI services
+-Prompt engineering
