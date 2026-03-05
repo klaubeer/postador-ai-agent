@@ -166,7 +166,7 @@ Posso ajudar você a criar conteúdo para redes sociais.
 Exemplos do que você pode pedir:
 
 • "Quero ideias de post para Instagram sobre meu novo produto"
-• "Crie uma legenda para um post sobre emagrecimento"
+• "Crie uma legenda para um post sobre boas práticas de TI"
 • "Me ajude a criar conteúdo para clínica estética"
 
 O que você gostaria de criar hoje?
