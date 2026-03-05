@@ -81,16 +81,17 @@ def node_planner(state: AgentState):
     contexto = state.get("contexto_rag", "")
 
     messages = [
-        {
-            "role": "system",
-            "content": f"""
+    {
+        "role": "system",
+        "content": f"""
 Você é um assistente de social media.
 
-Use também o seguinte conhecimento relevante:
+CONTEXTO DO CONHECIMENTO:
 
 {contexto}
 
-O objetivo do post é: {state.get("objetivo", "")}
+Use este contexto como fonte principal de verdade.
+Se a pergunta do usuário puder ser respondida usando o contexto, responda usando essas informações.
 
 Analise a conversa e identifique a intenção do usuário.
 
@@ -104,8 +105,8 @@ Responda apenas JSON:
 
 {{ "intent": "..." }}
 """
-        }
-    ] + history
+    }
+] + history
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -178,11 +179,16 @@ def node_conversa(state: AgentState):
             {
                 "role": "system",
                 "content": f"""
-Você é um assistente de social media.
+Você é o assistente Postador.
 
-Use o seguinte conhecimento quando relevante:
+CONTEXTO DO CONHECIMENTO:
 
 {contexto}
+
+Se a pergunta do usuário estiver relacionada ao contexto acima,
+responda usando essas informações.
+
+Se o contexto contiver a resposta, ele tem prioridade sobre seu conhecimento geral.
 """
             }
         ] + history
