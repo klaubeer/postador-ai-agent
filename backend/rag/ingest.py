@@ -38,7 +38,7 @@ index.add(
 
 faiss.write_index(index, "backend/rag/vector.index")
 
-with open("rag/texts.pkl", "wb") as f:
+with open("backend/rag/texts.pkl", "wb") as f:
     pickle.dump(texts, f)
 
 print("RAG index criado.")
