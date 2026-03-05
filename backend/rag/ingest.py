@@ -3,7 +3,7 @@ import faiss
 import pickle
 import numpy as np
 from openai import OpenAI
-
+ 
 client = OpenAI()
 
 knowledge_path = "rag"
