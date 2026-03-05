@@ -10,9 +10,10 @@ client = OpenAI()
 
 sessions = {}
 
-# -------------------------
-# EXTRACT BRIEFING (LLM)
-# -------------------------
+
+# =========================
+# EXTRACT BRIEFING
+# =========================
 
 def node_extract_briefing(state: AgentState):
 
@@ -27,41 +28,32 @@ def node_extract_briefing(state: AgentState):
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
+        response_format={"type": "json_object"},
         messages=[
             {
                 "role": "system",
                 "content": """
-You extract social media briefing info.
-
-Return JSON only.
+Extract briefing information for a social media post.
 
 Fields:
-
 objetivo
 produto
 publico
 rede_social
 
-If not mentioned return null.
+Return ONLY valid JSON.
 
-Examples:
+If a field is missing return null.
 
-User: I want to sell mugs on Instagram
+Example:
+
+User: quero vender canecas no instagram para programadores
 
 {
  "objetivo":"vender",
  "produto":"canecas",
- "publico":null,
+ "publico":"programadores",
  "rede_social":"instagram"
-}
-
-User: promoting my AI course to developers on linkedin
-
-{
- "objetivo":"vender",
- "produto":"curso de IA",
- "publico":"desenvolvedores",
- "rede_social":"linkedin"
 }
 """
             },
@@ -82,21 +74,18 @@ Update the briefing.
         ]
     )
 
-    try:
-        data = json.loads(response.choices[0].message.content)
-    except:
-        return state
+    data = json.loads(response.choices[0].message.content)
 
     for k, v in data.items():
-        if v:
+        if v is not None and v != "":
             state[k] = v
 
     return state
 
 
-# -------------------------
+# =========================
 # RAG
-# -------------------------
+# =========================
 
 def node_rag(state: AgentState):
 
@@ -108,9 +97,9 @@ def node_rag(state: AgentState):
     return state
 
 
-# -------------------------
+# =========================
 # PERGUNTAR OBJETIVO
-# -------------------------
+# =========================
 
 def node_perguntar_objetivo(state: AgentState):
 
@@ -144,9 +133,9 @@ Exemplos:
     }
 
 
-# -------------------------
+# =========================
 # MISSING INFO
-# -------------------------
+# =========================
 
 def node_missing_info(state: AgentState):
 
@@ -193,9 +182,9 @@ Você pode responder tudo em uma frase se quiser.
     return {"resposta": pergunta}
 
 
-# -------------------------
+# =========================
 # PLANNER
-# -------------------------
+# =========================
 
 def node_planner(state: AgentState):
 
@@ -212,13 +201,11 @@ You are a social media assistant.
 Respond in {lang}
 
 CONTEXT:
-
 {contexto}
 
 Identify user intent.
 
 Possible intents:
-
 gerar_ideias
 gerar_legenda
 conversa
@@ -247,22 +234,20 @@ Return JSON only.
     return state
 
 
-# -------------------------
-# IDEIAS
-# -------------------------
+# =========================
+# GERAR IDEIAS
+# =========================
 
 def node_gerar_ideias(state: AgentState):
 
     ideias = gerar_ideias_tool(state)
 
-    return {
-        "ideias": ideias["ideias"]
-    }
+    return {"ideias": ideias["ideias"]}
 
 
-# -------------------------
-# LEGENDA
-# -------------------------
+# =========================
+# GERAR LEGENDA
+# =========================
 
 def node_gerar_legenda(state: AgentState):
 
@@ -280,14 +265,18 @@ Legenda sugerida:
 {legenda["legenda"]}
 """
 
-    return {
-        "resposta": resposta
-    }
+    # reset briefing
+    state["objetivo"] = None
+    state["produto"] = None
+    state["publico"] = None
+    state["rede_social"] = None
+
+    return {"resposta": resposta}
 
 
-# -------------------------
+# =========================
 # CONVERSA
-# -------------------------
+# =========================
 
 def node_conversa(state: AgentState):
 
@@ -322,21 +311,25 @@ USER QUESTION:
         messages=messages
     )
 
-    return {
-        "resposta": response.choices[0].message.content
-    }
+    return {"resposta": response.choices[0].message.content}
 
 
-# -------------------------
+# =========================
 # ROUTERS
-# -------------------------
+# =========================
 
 def router_briefing(state: AgentState):
 
     if not state.get("objetivo"):
         return "perguntar_objetivo"
 
-    if not state.get("produto") or not state.get("publico") or not state.get("rede_social"):
+    missing = [
+        state.get("produto"),
+        state.get("publico"),
+        state.get("rede_social")
+    ]
+
+    if any(x is None for x in missing):
         return "missing_info"
 
     return "planner"
@@ -355,9 +348,9 @@ def router(state: AgentState):
     return "conversa"
 
 
-# -------------------------
-# LANGGRAPH
-# -------------------------
+# =========================
+# GRAPH
+# =========================
 
 builder = StateGraph(AgentState)
 
@@ -396,9 +389,9 @@ builder.add_edge("conversa", END)
 graph = builder.compile()
 
 
-# -------------------------
+# =========================
 # CHAT
-# -------------------------
+# =========================
 
 def agent_graph_chat(session_id, message, language="pt"):
 
@@ -411,7 +404,7 @@ Hello! I'm The Postador 🤖
 
 I help you create social media content.
 
-Please, tell me what would you like to post.
+Tell me what you would like to post.
 """
 
         else:
