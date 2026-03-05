@@ -1,9 +1,18 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from backend.agent_graph import graph
+from backend.planner import planner
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+state = {
+    "objetivo": None,
+    "plataforma": None,
+    "tema": None,
+    "publico": None
+}
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,12 +30,19 @@ class ChatRequest(BaseModel):
 @app.post("/post")
 def create_post(req: ChatRequest):
 
-    state = {
-        "user_input": req.message
-    }
+    global state
 
-    result = graph.invoke(state)
+    decision, state = planner(req.message, state)
 
-    return {
-        "post": result["post_final"]
-    }
+    if decision["action"] == "ask_user":
+        return {
+            "reply": decision["message"]
+        }
+
+    if decision["action"] == "run_post_pipeline":
+
+        result = graph.invoke(state)
+
+        return {
+            "post": result["post_final"]
+        }
