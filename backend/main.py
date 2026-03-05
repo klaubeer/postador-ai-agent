@@ -42,8 +42,10 @@ def create_post(req: ChatRequest):
 
     state = get_session_state(req.session_id)
 
+    # planner decide próximo passo
     decision, state = planner(req.message, state)
 
+    # salva estado atualizado
     sessions[req.session_id] = state
 
     if decision["action"] == "ask_user":
@@ -55,6 +57,14 @@ def create_post(req: ChatRequest):
 
         result = graph.invoke(state)
 
+        # atualizar sessão com resultado final
+        sessions[req.session_id] = result
+
         return {
             "post": result["post_final"]
         }
+
+    # fallback de segurança
+    return {
+        "reply": "Não consegui entender. Pode reformular?"
+    }
