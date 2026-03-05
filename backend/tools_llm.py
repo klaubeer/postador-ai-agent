@@ -1,3 +1,7 @@
+from openai import OpenAI
+
+client = OpenAI()
+
 def gerar_ideias_tool(state):
 
     prompt = f"""
