@@ -155,15 +155,38 @@ graph = builder.compile()
 
 def agent_graph_chat(session_id, message):
 
+    # primeira vez que a sessão aparece
     if session_id not in sessions:
+
+        mensagem_boas_vindas = """
+Olá! Eu sou o Postador 🤖
+
+Posso ajudar você a criar conteúdo para redes sociais.
+
+Exemplos do que você pode pedir:
+
+• "Quero ideias de post para Instagram sobre meu novo produto"
+• "Crie uma legenda para um post sobre emagrecimento"
+• "Me ajude a criar conteúdo para clínica estética"
+
+O que você gostaria de criar hoje?
+"""
+
         sessions[session_id] = {
             "session_id": session_id,
-            "history": []
+            "history": [
+                {
+                    "role": "assistant",
+                    "content": mensagem_boas_vindas
+                }
+            ]
         }
+
+        return mensagem_boas_vindas
 
     state = sessions[session_id]
 
-    # adicionar mensagem do usuário
+    # adiciona mensagem do usuário no histórico
     state["history"].append({
         "role": "user",
         "content": message
@@ -175,7 +198,7 @@ def agent_graph_chat(session_id, message):
 
     resposta = result.get("resposta", "Não consegui gerar resposta.")
 
-    # salvar resposta na memória
+    # salva resposta no histórico
     state["history"].append({
         "role": "assistant",
         "content": resposta
