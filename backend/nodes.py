@@ -21,6 +21,9 @@ Regras:
 
     ideias = llm(prompt)
 
+    if ideias:
+        ideias = ideias.strip()
+
     state["ideias"] = ideias
 
     return state
@@ -40,6 +43,9 @@ Regras:
 """
 
     melhor = llm(prompt)
+
+    if melhor:
+        melhor = melhor.strip()
 
     state["melhor_ideia"] = melhor
 
@@ -65,6 +71,9 @@ Regras:
 
     legenda = llm(prompt)
 
+    if legenda:
+        legenda = legenda.strip()
+
     state["legenda"] = legenda
 
     return state
@@ -87,7 +96,13 @@ Regras:
 
     image_prompt = llm(prompt)
 
+    if image_prompt:
+        image_prompt = image_prompt.strip()
+
     state["image_prompt"] = image_prompt
+
+    # ativa modo de aprovação de imagem
+    state["awaiting_image_approval"] = True
 
     return state
 
@@ -96,24 +111,35 @@ def generate_hashtags(state):
 
     plataforma = state.get("plataforma")
 
+    # hashtags só fazem sentido para essas plataformas
     if plataforma and plataforma.lower() not in ["instagram", "tiktok"]:
         state["hashtags"] = ""
         return state
 
     prompt = f"""
-Crie hashtags para redes sociais.
+Crie até 5 hashtags para redes sociais.
 
 Produto/Tema: {state.get("tema")}
 Público: {state.get("publico")}
-Plataforma: {plataforma}
 
-Regras:
-- máximo 5 hashtags
-- incluir hashtag do produto
-- apenas hashtags
+Retorne apenas palavras separadas por espaço.
 """
 
     hashtags = llm(prompt)
+
+    if hashtags:
+
+        hashtags = hashtags.replace("\n", " ").strip()
+
+        tags = hashtags.split()
+
+        # força #
+        tags = [t if t.startswith("#") else f"#{t}" for t in tags]
+
+        # máximo 5
+        tags = tags[:5]
+
+        hashtags = " ".join(tags)
 
     state["hashtags"] = hashtags
 
@@ -122,18 +148,23 @@ Regras:
 
 def format_post(state):
 
+    ideia = state.get("melhor_ideia", "")
+    legenda = state.get("legenda", "")
+    image_prompt = state.get("image_prompt", "")
+    hashtags = state.get("hashtags", "")
+
     state["post_final"] = f"""
 🎯 Ideia
-{state.get("melhor_ideia")}
+{ideia}
 
 ✍️ Legenda
-{state.get("legenda")}
+{legenda}
 
 🖼️ Prompt de imagem
-{state.get("image_prompt")}
+{image_prompt}
 
 🏷️ Hashtags
-{state.get("hashtags")}
+{hashtags}
 
 Digite **gerar imagem** para criar a imagem.
 """
