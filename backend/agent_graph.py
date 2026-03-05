@@ -8,6 +8,7 @@ import json
 
 client = OpenAI()
 
+# memória simples por sessão
 sessions = {}
 
 # -------------------------
@@ -15,9 +16,11 @@ sessions = {}
 # -------------------------
 
 def node_capturar_objetivo(state: AgentState):
+
     mensagem = state.get("message", "").lower()
 
     if not state.get("objetivo"):
+
         objetivos_validos = [
             "vender",
             "engajar",
@@ -35,10 +38,11 @@ def node_capturar_objetivo(state: AgentState):
 
 
 # -------------------------
-# RAG
+# RAG - BUSCAR CONTEXTO
 # -------------------------
 
 def node_rag(state: AgentState):
+
     query = state.get("message", "")
 
     contexto = search(query)
@@ -49,47 +53,11 @@ def node_rag(state: AgentState):
 
 
 # -------------------------
-# VERIFICAR SE RAG ACHOU ALGO
-# -------------------------
-
-def router_rag(state: AgentState):
-    contexto = state.get("contexto_rag", "")
-
-    if contexto and len(contexto.strip()) > 20:
-        return "responder_rag"
-
-    return "router_inicio"
-
-
-# -------------------------
-# RESPONDER DIRETO COM RAG (FIXADO COM LLM)
-# -------------------------
-
-def node_responder_rag(state: AgentState):
-    contexto = state.get("contexto_rag", "")
-    mensagem = state.get("message", "")
-    
-    prompt = f"""Pergunta do usuário: {mensagem}
-
-Conhecimento relevante do RAG: {contexto}
-
-Responda de forma útil, direta e concisa baseado no conhecimento acima. Seja natural como um assistente de social media."""
-    
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    return {
-        "resposta": response.choices[0].message.content
-    }
-
-
-# -------------------------
 # PERGUNTAR OBJETIVO
 # -------------------------
 
 def node_perguntar_objetivo(state: AgentState):
+
     return {
         "resposta": """
 Qual é o objetivo do post?
@@ -107,15 +75,23 @@ Qual é o seu objetivo?
 # -------------------------
 
 def node_planner(state: AgentState):
+
     history = state.get("history", [])[-20:]
+    contexto = state.get("contexto_rag", "")
 
     messages = [
         {
             "role": "system",
-            "content": """
+            "content": f"""
 Você é um assistente de social media.
 
-Identifique a intenção do usuário.
+CONTEXTO DE CONHECIMENTO:
+
+{contexto}
+
+Use esse contexto para entender melhor a conversa.
+
+Sua tarefa é identificar a intenção do usuário.
 
 Possíveis intenções:
 
@@ -125,7 +101,7 @@ conversa
 
 Responda apenas JSON:
 
-{ "intent": "..." }
+{{ "intent": "..." }}
 """
         }
     ] + history
@@ -148,10 +124,11 @@ Responda apenas JSON:
 
 
 # -------------------------
-# GERAR IDEIAS
+# EXECUTOR IDEIAS
 # -------------------------
 
 def node_gerar_ideias(state: AgentState):
+
     ideias = gerar_ideias_tool(state)
 
     return {
@@ -160,10 +137,11 @@ def node_gerar_ideias(state: AgentState):
 
 
 # -------------------------
-# GERAR LEGENDA
+# EXECUTOR LEGENDA
 # -------------------------
 
 def node_gerar_legenda(state: AgentState):
+
     legenda = gerar_legenda_tool(state)
 
     resposta = f"""
@@ -188,16 +166,37 @@ Legenda sugerida:
 # -------------------------
 
 def node_conversa(state: AgentState):
+
+    contexto = state.get("contexto_rag", "")
+    pergunta = state.get("message", "")
     history = state.get("history", [])
+
+    messages = [
+        {
+            "role": "system",
+            "content": """
+Você é o assistente Postador.
+Responda de forma clara e útil.
+"""
+        },
+        {
+            "role": "user",
+            "content": f"""
+Contexto interno:
+
+{contexto}
+
+Pergunta do usuário:
+{pergunta}
+
+Se a resposta estiver no contexto, utilize essas informações.
+"""
+        }
+    ] + history
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "Você é o assistente Postador."
-            }
-        ] + history
+        messages=messages
     )
 
     return {
@@ -206,10 +205,11 @@ def node_conversa(state: AgentState):
 
 
 # -------------------------
-# ROUTER INICIO
+# ROUTER INICIAL
 # -------------------------
 
 def router_inicio(state: AgentState):
+
     if not state.get("objetivo"):
         return "perguntar_objetivo"
 
@@ -221,6 +221,7 @@ def router_inicio(state: AgentState):
 # -------------------------
 
 def router(state: AgentState):
+
     intent = state.get("intent")
 
     if intent == "gerar_ideias":
@@ -233,15 +234,15 @@ def router(state: AgentState):
 
 
 # -------------------------
-# LANGGRAPH (ADICIONADO router_inicio NO BUILDER)
+# LANGGRAPH
 # -------------------------
 
 builder = StateGraph(AgentState)
 
 builder.add_node("capturar_objetivo", node_capturar_objetivo)
 builder.add_node("rag", node_rag)
-builder.add_node("responder_rag", node_responder_rag)
 builder.add_node("perguntar_objetivo", node_perguntar_objetivo)
+
 builder.add_node("planner", node_planner)
 builder.add_node("gerar_ideias", node_gerar_ideias)
 builder.add_node("gerar_legenda", node_gerar_legenda)
@@ -253,15 +254,6 @@ builder.add_edge("capturar_objetivo", "rag")
 
 builder.add_conditional_edges(
     "rag",
-    router_rag
-)
-
-builder.add_edge("responder_rag", END)
-builder.add_edge("perguntar_objetivo", END)
-
-# FIX: Adicionado o conditional para router_inicio
-builder.add_conditional_edges(
-    "router_inicio",
     router_inicio
 )
 
@@ -270,6 +262,7 @@ builder.add_conditional_edges(
     router
 )
 
+builder.add_edge("perguntar_objetivo", END)
 builder.add_edge("gerar_ideias", "gerar_legenda")
 builder.add_edge("gerar_legenda", END)
 builder.add_edge("conversa", END)
@@ -278,11 +271,13 @@ graph = builder.compile()
 
 
 # -------------------------
-# FASTAPI
+# FUNÇÃO USADA PELO FASTAPI
 # -------------------------
 
 def agent_graph_chat(session_id, message):
+
     if session_id not in sessions:
+
         mensagem_boas_vindas = """
 Olá! Eu sou o Postador 🤖
 
@@ -292,8 +287,9 @@ Antes de começarmos:
 
 Qual é o objetivo do post?
 
-(vender, engajar, educar, gerar autoridade, divulga produto)
+(vender, engajar, educar, gerar autoridade, divulgar produto)
 """
+
         sessions[session_id] = {
             "session_id": session_id,
             "history": [
