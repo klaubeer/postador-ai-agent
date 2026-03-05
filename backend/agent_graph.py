@@ -33,6 +33,13 @@ gerar_ideias
 gerar_legenda
 conversa
 
+IMPORTANTE:
+
+Se o usuário estiver corrigindo ou criticando
+a resposta anterior (ex: "não era isso", "não queria isso",
+"isso está errado"), considere que ele ainda quer
+GERAR IDEIAS.
+
 Responda apenas JSON:
 
 { "intent": "..." }
