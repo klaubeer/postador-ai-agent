@@ -1,5 +1,6 @@
 from openai import OpenAI
 from rag.retriever import search
+
 client = OpenAI()
 
 
@@ -41,7 +42,7 @@ def gerar_legenda_tool(state):
 
     contexto = search(state.get("message", ""))
 
- prompt = f"""
+    prompt = f"""
 Use também este conhecimento de marketing:
 
 {contexto}
@@ -70,8 +71,6 @@ A legenda deve conter:
     return {
         "legenda": response.choices[0].message.content
     }
-
-from rag.retriever import search
 
 
 def buscar_conhecimento_tool(state):
