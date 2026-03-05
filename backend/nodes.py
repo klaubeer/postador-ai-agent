@@ -14,7 +14,7 @@ Objetivo: {state.get("objetivo")}
 Regras:
 - usar o produto ou tema
 - pensar no público
-- máximo 12 palavras por ideia
+- máximo 20 palavras por ideia
 - apenas lista numerada
 - sem explicação
 """
