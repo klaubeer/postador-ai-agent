@@ -21,7 +21,6 @@ app.add_middleware(
 
 sessions = {}
 
-
 def get_session_state(session_id: str):
     if session_id not in sessions:
         sessions[session_id] = {
@@ -30,8 +29,7 @@ def get_session_state(session_id: str):
             "tema": None,
             "publico": None,
             "image_prompt": None,
-            "image_url": None,
-            "awaiting_image_approval": False
+            "image_url": None
         }
     return sessions[session_id]
 
@@ -45,8 +43,12 @@ class ChatRequest(BaseModel):
     message: str
 
 
+class ImageRequest(BaseModel):
+    session_id: str
+
+
 # -------------------------
-# endpoint
+# CHAT ENDPOINT
 # -------------------------
 
 @app.post("/chat")
@@ -57,59 +59,12 @@ def chat(req: ChatRequest):
     print("MESSAGE RECEIVED:", req.message)
 
     state = get_session_state(req.session_id)
-    msg = req.message.lower().strip()
 
     print("CURRENT STATE:", state)
 
     # -------------------------
-    # geração de imagem
+    # planner decide o fluxo
     # -------------------------
-
-    if state.get("awaiting_image_approval"):
-
-        print("AWAITING IMAGE APPROVAL MODE")
-        print("USER MESSAGE:", msg)
-
-        if "gerar" in msg:
-
-            from backend.image_gen import generate_image
-
-            prompt = state.get("image_prompt")
-
-            print("GENERATING IMAGE WITH PROMPT:", prompt)
-
-            if not prompt:
-                print("ERROR: image_prompt vazio")
-                return {
-                    "message": "Erro: prompt de imagem não encontrado."
-                }
-
-            image_url = generate_image(prompt)
-
-            print("IMAGE URL RETURNED:", image_url)
-
-            state["image_url"] = image_url
-            state["awaiting_image_approval"] = False
-
-            sessions[req.session_id] = state
-
-            print("UPDATED STATE:", state)
-
-            return {
-                "image": image_url
-            }
-
-        print("USER DID NOT CONFIRM IMAGE GENERATION")
-
-        return {
-            "message": "Digite **gerar** para criar a imagem."
-        }
-
-    # -------------------------
-    # planner
-    # -------------------------
-
-    print("RUNNING PLANNER")
 
     decision = planner(req.message, state)
 
@@ -118,6 +73,10 @@ def chat(req: ChatRequest):
     state = decision["state"]
 
     required = ["objetivo", "plataforma", "tema"]
+
+    # -------------------------
+    # gerar post
+    # -------------------------
 
     if decision["action"] == "run_post_pipeline":
 
@@ -137,7 +96,7 @@ def chat(req: ChatRequest):
 
         print("GRAPH RESULT:", result)
 
-        # salva novo estado na sessão
+        # salva novo estado
         sessions[req.session_id] = result
 
         return {
@@ -145,9 +104,51 @@ def chat(req: ChatRequest):
             "state": result
         }
 
+    # -------------------------
+    # continuar conversa
+    # -------------------------
+
     print("ASKING USER MORE INFO")
+
+    sessions[req.session_id] = state
 
     return {
         "message": decision["message"],
         "state": state
+    }
+
+
+# -------------------------
+# IMAGE GENERATION
+# -------------------------
+
+@app.post("/gerar-imagem")
+def gerar_imagem(req: ImageRequest):
+
+    print("\n===== IMAGE GENERATION =====")
+    print("SESSION:", req.session_id)
+
+    state = get_session_state(req.session_id)
+
+    prompt = state.get("image_prompt")
+
+    print("IMAGE PROMPT:", prompt)
+
+    if not prompt:
+        return {
+            "message": "Prompt de imagem não encontrado."
+        }
+
+    from backend.image_gen import generate_image
+
+    image = generate_image(prompt)
+
+    print("IMAGE GENERATED")
+
+    state["image_url"] = image
+
+    sessions[req.session_id] = state
+
+    return {
+        "image": image
     }
