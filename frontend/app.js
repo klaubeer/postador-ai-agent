@@ -60,7 +60,7 @@ input.value = ''
 
 try{
 
-const API_URL = "https://postador-ai-agent.onrender.com";
+const API_URL = "http://127.0.0.1:8000";
     
 const res = await fetch(`${API_URL}/chat`,{
   method:'POST',
