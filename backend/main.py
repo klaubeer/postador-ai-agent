@@ -69,8 +69,6 @@ def chat(req: ChatRequest):
 
     state = decision["state"]
 
-    required = ["objetivo", "plataforma", "tema"]
-
     # -------------------------
     # gerar post
     # -------------------------
@@ -79,12 +77,15 @@ def chat(req: ChatRequest):
 
         print("ACTION: RUN POST PIPELINE")
 
-        if not all(state.get(k) for k in required):
+        # só precisamos de tema
+        if not state.get("tema"):
 
-            print("MISSING REQUIRED INFO")
+            print("MISSING THEME")
+
+            sessions[req.session_id] = state
 
             return {
-                "message": "Preciso de mais algumas informações antes de gerar o post."
+                "message": "Qual é o tema ou produto do post?"
             }
 
         print("RUNNING GRAPH PIPELINE")
@@ -139,7 +140,6 @@ def gerar_imagem(req: ImageRequest):
 
     result = generate_image(prompt)
 
-    # erro vindo da geração
     if "error" in result:
 
         print("IMAGE GENERATION FAILED:", result["error"])
