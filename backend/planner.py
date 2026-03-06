@@ -56,14 +56,17 @@ def extract_json(text: str):
         end = text.rfind("}") + 1
         return json.loads(text[start:end])
     except Exception:
-        print("LLM retornou JSON inválido:")
+
+        print("\n❌ LLM retornou JSON inválido:")
         print(text)
+        print("--------------------------------------------------\n")
 
         return {
             "action": "ask_user",
             "message": "Desculpe, houve um erro. Pode repetir?",
             "state_updates": {}
         }
+
 
 def planner(user_input: str, state: dict):
 
@@ -79,9 +82,23 @@ Mensagem do usuário:
 {user_input}
 """
 
-    result = llm(f"{SYSTEM_PROMPT}\n\n{prompt}")
+    full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
+
+    print("\n========== PROMPT ENVIADO AO LLM ==========")
+    print(full_prompt)
+    print("===========================================\n")
+
+    result = llm(full_prompt)
+
+    print("\n========== RESPOSTA BRUTA DO LLM ==========")
+    print(result)
+    print("===========================================\n")
 
     decision = extract_json(result)
+
+    print("\n========== DECISÃO PARSEADA ==========")
+    print(decision)
+    print("======================================\n")
 
     # Atualiza estado da conversa
     updates = decision.get("state_updates", {})
@@ -94,4 +111,4 @@ Mensagem do usuário:
         "action": decision.get("action", "ask_user"),
         "message": decision.get("message", "Ok."),
         "state": state
-}
+    }
