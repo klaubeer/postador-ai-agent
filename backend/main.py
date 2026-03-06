@@ -62,10 +62,7 @@ def chat(req: ChatRequest):
 
     print("CURRENT STATE:", state)
 
-    # -------------------------
-    # planner decide o fluxo
-    # -------------------------
-
+    # planner decide fluxo
     decision = planner(req.message, state)
 
     print("PLANNER DECISION:", decision)
@@ -96,7 +93,6 @@ def chat(req: ChatRequest):
 
         print("GRAPH RESULT:", result)
 
-        # salva novo estado
         sessions[req.session_id] = result
 
         return {
@@ -136,17 +132,25 @@ def gerar_imagem(req: ImageRequest):
 
     if not prompt:
         return {
-            "message": "Prompt de imagem não encontrado."
+            "error": "Prompt de imagem não encontrado."
         }
 
     from backend.image_gen import generate_image
 
-    image = generate_image(prompt)
+    result = generate_image(prompt)
+
+    # erro vindo da geração
+    if "error" in result:
+
+        print("IMAGE GENERATION FAILED:", result["error"])
+
+        return result
+
+    image = result["image"]
 
     print("IMAGE GENERATED")
 
     state["image_url"] = image
-
     sessions[req.session_id] = state
 
     return {
