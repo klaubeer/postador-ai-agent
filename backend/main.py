@@ -61,7 +61,7 @@ def chat(req: ChatRequest):
 
     if state.get("awaiting_image_approval"):
 
-        if "gerar imagem" in msg:
+        if "gerar" in msg:
 
             from backend.image_gen import generate_image
 
@@ -84,7 +84,7 @@ def chat(req: ChatRequest):
             }
 
         return {
-            "message": "Digite **gerar imagem** para criar a imagem."
+            "message": "Digite **gerar** para criar a imagem."
         }
 
     # -------------------------
