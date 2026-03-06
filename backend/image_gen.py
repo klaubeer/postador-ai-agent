@@ -1,23 +1,28 @@
 from openai import OpenAI
-import base64
 
 client = OpenAI()
 
-def generate_image(prompt):
 
-    result = client.images.generate(
-        model="gpt-image-1",
-        prompt=prompt,
-        size="1024x1024"
-    )
+def generate_image(prompt: str) -> str:
+    """
+    Gera uma imagem usando OpenAI e retorna o base64 da imagem.
+    """
 
-    image_base64 = result.data[0].b64_json
+    print("IMAGE GEN PROMPT:", prompt)
 
-    image_bytes = base64.b64decode(image_base64)
+    try:
+        result = client.images.generate(
+            model="gpt-image-1",
+            prompt=prompt,
+            size="1024x1024"
+        )
 
-    path = "generated_image.png"
+        image_base64 = result.data[0].b64_json
 
-    with open(path, "wb") as f:
-        f.write(image_bytes)
+        print("IMAGE GENERATED SUCCESSFULLY")
 
-    return "/generated_image.png"
+        return image_base64
+
+    except Exception as e:
+        print("IMAGE GENERATION ERROR:", e)
+        return None
