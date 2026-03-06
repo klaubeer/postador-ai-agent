@@ -1,0 +1,40 @@
+# ambiente
+.env
+.env.*
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# virtualenv
+venv/
+.env/
+.venv/
+
+# build
+build/
+dist/
+*.egg-info/
+
+# logs
+*.log
+
+# sistema
+.DS_Store
+Thumbs.db
+
+# vscode
+.vscode/
+
+# cache
+.cache/
+.pytest_cache/
+
+# node (se tiver frontend)
+node_modules/
+
+# arquivos temporarios
+*.tmp
+*.bak
+*.swp
