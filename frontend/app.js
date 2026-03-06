@@ -60,8 +60,8 @@ input.value = ''
 
 try{
 
-const API_URL = "http://127.0.0.1:8000";
-    
+const API_URL = "http://127.0.0.1:8000"
+
 const res = await fetch(`${API_URL}/chat`,{
   method:'POST',
   headers:{
@@ -82,6 +82,7 @@ console.log("SERVER RESPONSE:", data)
 if(data.image){
 
 appendImage(data.image)
+
 return
 
 }
@@ -125,7 +126,7 @@ chat.scrollTop = chat.scrollHeight
 
 
 // 🖼️ FUNÇÃO PARA MOSTRAR IMAGEM
-function appendImage(url){
+function appendImage(base64){
 
 const div = document.createElement('div')
 
@@ -133,7 +134,7 @@ div.className = "msg bot"
 
 const img = document.createElement('img')
 
-img.src = "data:image/png;base64," + url
+img.src = "data:image/png;base64," + base64
 img.style.maxWidth = "300px"
 img.style.borderRadius = "10px"
 img.style.marginTop = "5px"
