@@ -24,7 +24,7 @@ Regras:
     if ideias:
         ideias = ideias.strip()
 
-    state["ideias"] = ideias
+    state["ideias"] = ideias or ""
 
     return state
 
@@ -47,7 +47,7 @@ Regras:
     if melhor:
         melhor = melhor.strip()
 
-    state["melhor_ideia"] = melhor
+    state["melhor_ideia"] = melhor or ""
 
     return state
 
@@ -74,7 +74,7 @@ Regras:
     if legenda:
         legenda = legenda.strip()
 
-    state["legenda"] = legenda
+    state["legenda"] = legenda or ""
 
     return state
 
@@ -83,7 +83,7 @@ def generate_hashtags(state):
 
     plataforma = state.get("plataforma")
 
-    # hashtags só fazem sentido para essas plataformas
+    # hashtags fazem sentido só para algumas redes
     if plataforma and plataforma.lower() not in ["instagram", "tiktok"]:
         state["hashtags"] = ""
         return state
@@ -94,18 +94,18 @@ Crie até 5 hashtags para redes sociais.
 Produto/Tema: {state.get("tema")}
 Público: {state.get("publico")}
 
-Retorne apenas palavras separadas por espaço.
+Retorne apenas hashtags separadas por espaço.
 """
 
     hashtags = llm(prompt)
 
     if hashtags:
 
-        hashtags = hashtags.replace("\n", " ").strip()
+        hashtags = hashtags.replace("\n", " ").replace(",", " ").strip()
 
         tags = hashtags.split()
 
-        # força #
+        # garante #
         tags = [t if t.startswith("#") else f"#{t}" for t in tags]
 
         # máximo 5
@@ -113,23 +113,24 @@ Retorne apenas palavras separadas por espaço.
 
         hashtags = " ".join(tags)
 
-    state["hashtags"] = hashtags
+    state["hashtags"] = hashtags or ""
 
     return state
+
 
 def generate_image_prompt(state):
 
     prompt = f"""
-Crie prompt curto para gerar imagem.
+Write a short prompt for an AI image generator.
 
-Produto/Tema: {state.get("tema")}
-Ideia: {state.get("melhor_ideia")}
-Público: {state.get("publico")}
+Product/Theme: {state.get("tema")}
+Idea: {state.get("melhor_ideia")}
+Audience: {state.get("publico")}
 
-Regras:
-- máximo 15 palavras
-- imagem deve mostrar o produto
-- estilo visual claro
+Rules:
+- max 15 words
+- clearly show the product
+- specify visual style
 """
 
     image_prompt = llm(prompt)
@@ -137,12 +138,10 @@ Regras:
     if image_prompt:
         image_prompt = image_prompt.strip()
 
-    state["image_prompt"] = image_prompt
-
-    # ativa modo de aprovação de imagem
-    state["awaiting_image_approval"] = True
+    state["image_prompt"] = image_prompt or ""
 
     return state
+
 
 def format_post(state):
 
@@ -150,20 +149,19 @@ def format_post(state):
     legenda = state.get("legenda", "")
     hashtags = state.get("hashtags", "")
     image_prompt = state.get("image_prompt", "")
-   
+
+    hashtags_section = f"\n🏷️ Hashtags\n{hashtags}" if hashtags else ""
+
     state["post_final"] = f"""
 🎯 Ideia
 {ideia}
 
 ✍️ Legenda
 {legenda}
-
-🏷️ Hashtags
-{hashtags}
+{hashtags_section}
 
 🖼️ Prompt de imagem
 {image_prompt}
-
 """
 
     return state
