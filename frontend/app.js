@@ -1,6 +1,6 @@
 let lang = localStorage.getItem("lang") || "pt"
 
-// cria session id se não existir (uma por aba)
+// cria session id se não existir
 let sessionId = sessionStorage.getItem("session_id")
 
 if (!sessionId) {
@@ -12,6 +12,10 @@ console.log("SESSION:", sessionId)
 
 let lastPost = ""
 let lastImage = ""
+
+const API_URL = window.location.hostname === "localhost"
+? "http://127.0.0.1:8000"
+: "https://postador-ai-agent.onrender.com"
 
 const texts = {
 
@@ -61,8 +65,6 @@ input.value = ''
 
 try{
 
-const API_URL = "http://127.0.0.1:8000"
-
 const res = await fetch(`${API_URL}/chat`,{
 method:'POST',
 headers:{
@@ -78,8 +80,6 @@ const data = await res.json()
 
 console.log("SERVER RESPONSE:", data)
 
-
-// se veio imagem
 if(data.image){
 
 appendImage(data.image)
@@ -88,8 +88,6 @@ return
 
 }
 
-
-// se veio post final
 if(data.post){
 
 lastPost = data.post
@@ -98,8 +96,6 @@ return
 
 }
 
-
-// resposta normal
 const resposta =
       data.message
    || data.reply
@@ -152,6 +148,8 @@ div.innerHTML = `
 
 <button onclick="copiarPost()">📋 Copiar post</button>
 
+<button onclick="recomecar()">🔄 Recomeçar</button>
+
 </div>
 `
 
@@ -185,6 +183,7 @@ btns.style.marginTop = "10px"
 
 btns.innerHTML = `
 <button onclick="baixarImagem()">⬇️ Baixar</button>
+<button onclick="recomecar()">🔄 Novo post</button>
 `
 
 div.appendChild(btns)
@@ -203,8 +202,6 @@ async function gerarImagem(){
 
 appendMsg("bot","🎨 Gerando imagem...")
 
-const API_URL = "http://127.0.0.1:8000"
-
 try{
 
 const res = await fetch(`${API_URL}/gerar-imagem`,{
@@ -219,20 +216,16 @@ session_id:sessionId
 
 const data = await res.json()
 
-// erro vindo do backend
 if(data.error){
 
 appendMsg("bot", data.error)
-
 return
 
 }
 
-// imagem válida
 if(data.image){
 
 appendImage(data.image)
-
 lastImage = data.image
 
 }
@@ -271,6 +264,26 @@ if(!lastPost) return
 navigator.clipboard.writeText(lastPost)
 
 appendMsg("bot","✅ Post copiado!")
+
+}
+
+
+// RECOMEÇAR CONVERSA
+function recomecar(){
+
+sessionId = crypto.randomUUID()
+sessionStorage.setItem("session_id", sessionId)
+
+lastPost = ""
+lastImage = ""
+
+const chat = document.getElementById("chat")
+
+chat.innerHTML = ""
+
+appendMsg("bot", texts[lang].welcome)
+
+console.log("NEW SESSION:", sessionId)
 
 }
 
