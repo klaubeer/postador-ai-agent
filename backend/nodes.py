@@ -1,6 +1,10 @@
 from backend.llm import llm
 
 
+# -------------------------
+# IDEIA
+# -------------------------
+
 def generate_idea(state):
 
     prompt = f"""
@@ -17,7 +21,6 @@ Regras:
 - usar o produto ou tema
 - pensar no público
 - sem hashtags
-- sem emojis
 """
 
     ideia = llm(prompt)
@@ -25,16 +28,19 @@ Regras:
     if ideia:
         ideia = ideia.strip()
 
-    # mantém mesmo nome para não quebrar pipeline
     state["melhor_ideia"] = ideia or ""
 
     return state
 
 
+# -------------------------
+# LEGENDA
+# -------------------------
+
 def generate_caption(state):
 
     prompt = f"""
-Crie legenda curta para redes sociais.
+Crie uma legenda curta para redes sociais.
 
 Ideia: {state.get("melhor_ideia")}
 Produto/Tema: {state.get("tema")}
@@ -58,12 +64,23 @@ Regras:
     return state
 
 
+# -------------------------
+# HASHTAGS
+# -------------------------
+
 def generate_hashtags(state):
 
-    plataforma = state.get("plataforma")
+    plataforma = (state.get("plataforma") or "").lower()
 
-    # hashtags fazem sentido só para algumas redes
-    if plataforma and plataforma.lower() not in ["instagram", "tiktok"]:
+    # normaliza plataformas
+    if "insta" in plataforma:
+        plataforma = "instagram"
+
+    if "tik" in plataforma:
+        plataforma = "tiktok"
+
+    # só gerar hashtags nessas redes
+    if plataforma not in ["instagram", "tiktok"]:
         state["hashtags"] = ""
         return state
 
@@ -72,6 +89,11 @@ Crie até 5 hashtags para redes sociais.
 
 Produto/Tema: {state.get("tema")}
 Público: {state.get("publico")}
+
+Regras:
+- máximo 5
+- populares
+- relacionadas ao tema
 
 Retorne apenas hashtags separadas por espaço.
 """
@@ -87,7 +109,6 @@ Retorne apenas hashtags separadas por espaço.
         # garante #
         tags = [t if t.startswith("#") else f"#{t}" for t in tags]
 
-        # máximo 5
         tags = tags[:5]
 
         hashtags = " ".join(tags)
@@ -96,6 +117,10 @@ Retorne apenas hashtags separadas por espaço.
 
     return state
 
+
+# -------------------------
+# IMAGE PROMPT
+# -------------------------
 
 def generate_image_prompt(state):
 
@@ -122,6 +147,10 @@ Rules:
     return state
 
 
+# -------------------------
+# FORMAT POST
+# -------------------------
+
 def format_post(state):
 
     ideia = state.get("melhor_ideia", "")
@@ -129,17 +158,27 @@ def format_post(state):
     hashtags = state.get("hashtags", "")
     image_prompt = state.get("image_prompt", "")
 
-    hashtags_section = f"\n🏷️ Hashtags\n{hashtags}" if hashtags else ""
-
-    state["post_final"] = f"""🎯 Ideia
+    post = f"""🎯 Ideia
 {ideia}
 
 ✍️ Legenda
 {legenda}
-{hashtags_section}
+"""
 
-🖼️ Prompt de imagem (opcional)
+    if hashtags:
+        post += f"""
+
+🏷️ Hashtags
+{hashtags}
+"""
+
+    if image_prompt:
+        post += f"""
+
+🖼️ Prompt de imagem
 {image_prompt}
 """
+
+    state["post_final"] = post
 
     return state
