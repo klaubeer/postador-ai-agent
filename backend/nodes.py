@@ -166,7 +166,7 @@ def format_post(state):
 🖼️ Prompt de imagem
 {image_prompt}
 
-Digite **gerar** para criar a imagem.
+Caso o prompt de imagem esteja de acordo, digite **gerar** para criar a imagem.
 """
 
     return state
