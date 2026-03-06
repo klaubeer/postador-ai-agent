@@ -159,7 +159,8 @@ def format_post(state):
 {legenda}
 {hashtags_section}
 
-🖼️ Prompt de imagem
+🖼️ Prompt de imagem 
+(caso copiar para outra ferramenta e/ou entender como será gerada essa imagem)
 {image_prompt}
 """
 
