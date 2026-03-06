@@ -152,8 +152,7 @@ def format_post(state):
 
     hashtags_section = f"\n🏷️ Hashtags\n{hashtags}" if hashtags else ""
 
-    state["post_final"] = f"""
-🎯 Ideia
+    state["post_final"] = f""" 🎯 Ideia
 {ideia}
 
 ✍️ Legenda
