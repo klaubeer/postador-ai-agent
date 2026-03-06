@@ -29,6 +29,7 @@ send:"Send"
 
 }
 
+
 function setLang(l){
 
 lang = l
@@ -41,9 +42,11 @@ document.getElementById("sendBtn").innerText = texts[l].send
 
 }
 
+
 window.onload = function(){
 setLang(lang)
 }
+
 
 async function enviar(){
 
@@ -76,27 +79,33 @@ const data = await res.json()
 console.log("SERVER RESPONSE:", data)
 
 
-// 🖼️ SE VEIO IMAGEM
+// 🖼️ se veio imagem
 if(data.image){
 
 appendImage(data.image)
 lastImage = data.image
-
 return
 
 }
 
 
-// resposta normal
+// 🧠 se veio POST completo
+if(data.post){
+
+lastPost = data.post
+appendPost(data.post)
+return
+
+}
+
+
+// 💬 resposta normal
 const resposta =
       data.message
-   || data.post
    || data.reply
    || "Erro ao gerar resposta"
 
-lastPost = resposta
-
-appendPost(resposta)
+appendMsg('bot', resposta)
 
 }catch(err){
 
@@ -127,7 +136,7 @@ chat.scrollTop = chat.scrollHeight
 }
 
 
-// POST COM BOTÕES
+// POST FINAL COM BOTÕES
 function appendPost(text){
 
 const div = document.createElement('div')
@@ -155,7 +164,7 @@ chat.scrollTop = chat.scrollHeight
 }
 
 
-// 🖼️ FUNÇÃO PARA MOSTRAR IMAGEM
+// 🖼️ mostrar imagem
 function appendImage(base64){
 
 const div = document.createElement('div')
@@ -189,7 +198,7 @@ chat.scrollTop = chat.scrollHeight
 }
 
 
-// 🎨 GERAR IMAGEM
+// 🎨 gerar imagem
 async function gerarImagem(){
 
 appendMsg("bot","🎨 Gerando imagem...")
@@ -225,7 +234,7 @@ appendMsg("bot","Erro ao gerar imagem")
 }
 
 
-// ⬇️ BAIXAR IMAGEM
+// ⬇️ baixar imagem
 function baixarImagem(){
 
 if(!lastImage) return
@@ -240,7 +249,7 @@ link.click()
 }
 
 
-// 📋 COPIAR POST
+// 📋 copiar post
 function copiarPost(){
 
 if(!lastPost) return
@@ -260,7 +269,7 @@ return text
 .replace(/(https?:\/\/[^\s)]+)/g,'<a href="$1" target="_blank">$1</a>')
 .replace(/\n/g,'<br>')
 
-} 
+}
 
 
 document.getElementById("msg").addEventListener("keydown",function(e){
