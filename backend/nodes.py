@@ -1,10 +1,10 @@
 from backend.llm import llm
 
 
-def generate_ideas(state):
+def generate_idea(state):
 
     prompt = f"""
-Crie 3 ideias curtas de post.
+Crie uma ideia de post para redes sociais.
 
 Produto/Tema: {state.get("tema")}
 Plataforma: {state.get("plataforma")}
@@ -12,42 +12,21 @@ Público: {state.get("publico")}
 Objetivo: {state.get("objetivo")}
 
 Regras:
+- máximo 50 palavras
+- explicar claramente o conceito do post
 - usar o produto ou tema
 - pensar no público
-- máximo 20 palavras por ideia
-- apenas lista numerada
-- sem explicação
+- sem hashtags
+- sem emojis
 """
 
-    ideias = llm(prompt)
+    ideia = llm(prompt)
 
-    if ideias:
-        ideias = ideias.strip()
+    if ideia:
+        ideia = ideia.strip()
 
-    state["ideias"] = ideias or ""
-
-    return state
-
-
-def select_best_idea(state):
-
-    prompt = f"""
-Escolha a melhor ideia para viralizar.
-
-Ideias:
-{state.get("ideias")}
-
-Regras:
-- retorne apenas o texto da ideia escolhida
-- sem explicação
-"""
-
-    melhor = llm(prompt)
-
-    if melhor:
-        melhor = melhor.strip()
-
-    state["melhor_ideia"] = melhor or ""
+    # mantém mesmo nome para não quebrar pipeline
+    state["melhor_ideia"] = ideia or ""
 
     return state
 
@@ -152,7 +131,7 @@ def format_post(state):
 
     hashtags_section = f"\n🏷️ Hashtags\n{hashtags}" if hashtags else ""
 
-    state["post_final"] = f""" 🎯 Ideia
+    state["post_final"] = f"""🎯 Ideia
 {ideia}
 
 ✍️ Legenda
