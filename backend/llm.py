@@ -15,7 +15,7 @@ def llm(prompt):
         return "⚠️ Token limit reached for this session."
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini"
         messages=[
             {
                 "role": "user",
@@ -33,7 +33,7 @@ def llm(prompt):
 
     session_tokens += total_tokens
 
-    print("\n====== TOKEN USAGE ======")
+    print("\n====== TOKENS  ======")
     print("prompt:", prompt_tokens)
     print("completion:", completion_tokens)
     print("total:", total_tokens)
