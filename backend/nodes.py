@@ -150,7 +150,7 @@ def format_post(state):
 
     ideia = state.get("melhor_ideia", "")
     legenda = state.get("legenda", "")
-     hashtags = state.get("hashtags", "")
+    hashtags = state.get("hashtags", "")
     image_prompt = state.get("image_prompt", "")
    
     state["post_final"] = f"""
