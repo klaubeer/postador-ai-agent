@@ -3,14 +3,23 @@ from openai import OpenAI
 client = OpenAI()
 
 
-def generate_image(prompt: str) -> str:
+def generate_image(prompt: str) -> dict:
     """
-    Gera uma imagem usando OpenAI e retorna o base64 da imagem.
+    Gera uma imagem usando OpenAI.
+    Retorna:
+    {
+        "image": base64
+    }
+    ou
+    {
+        "error": "mensagem"
+    }
     """
 
     print("IMAGE GEN PROMPT:", prompt)
 
     try:
+
         result = client.images.generate(
             model="gpt-image-1",
             prompt=prompt,
@@ -21,8 +30,24 @@ def generate_image(prompt: str) -> str:
 
         print("IMAGE GENERATED SUCCESSFULLY")
 
-        return image_base64
+        return {
+            "image": image_base64
+        }
 
     except Exception as e:
-        print("IMAGE GENERATION ERROR:", e)
-        return None
+
+        error_text = str(e)
+
+        print("IMAGE GENERATION ERROR:", error_text)
+
+        # erro de moderação
+        if "moderation_blocked" in error_text or "safety" in error_text:
+
+            return {
+                "error": "⚠️ A imagem não pôde ser gerada porque o conteúdo viola as políticas de segurança."
+            }
+
+        # erro genérico
+        return {
+            "error": "⚠️ Ocorreu um erro ao gerar a imagem. Tente novamente."
+        }
