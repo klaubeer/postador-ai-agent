@@ -52,8 +52,14 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 def chat(req: ChatRequest):
 
+    print("\n===== NEW REQUEST =====")
+    print("SESSION:", req.session_id)
+    print("MESSAGE RECEIVED:", req.message)
+
     state = get_session_state(req.session_id)
     msg = req.message.lower().strip()
+
+    print("CURRENT STATE:", state)
 
     # -------------------------
     # geração de imagem
@@ -61,27 +67,39 @@ def chat(req: ChatRequest):
 
     if state.get("awaiting_image_approval"):
 
+        print("AWAITING IMAGE APPROVAL MODE")
+        print("USER MESSAGE:", msg)
+
         if "gerar" in msg:
 
             from backend.image_gen import generate_image
 
             prompt = state.get("image_prompt")
 
+            print("GENERATING IMAGE WITH PROMPT:", prompt)
+
             if not prompt:
+                print("ERROR: image_prompt vazio")
                 return {
                     "message": "Erro: prompt de imagem não encontrado."
                 }
 
             image_url = generate_image(prompt)
 
+            print("IMAGE URL RETURNED:", image_url)
+
             state["image_url"] = image_url
             state["awaiting_image_approval"] = False
 
             sessions[req.session_id] = state
 
+            print("UPDATED STATE:", state)
+
             return {
                 "image": image_url
             }
+
+        print("USER DID NOT CONFIRM IMAGE GENERATION")
 
         return {
             "message": "Digite **gerar** para criar a imagem."
@@ -91,20 +109,33 @@ def chat(req: ChatRequest):
     # planner
     # -------------------------
 
+    print("RUNNING PLANNER")
+
     decision = planner(req.message, state)
+
+    print("PLANNER DECISION:", decision)
+
     state = decision["state"]
 
     required = ["objetivo", "plataforma", "tema"]
 
     if decision["action"] == "run_post_pipeline":
 
+        print("ACTION: RUN POST PIPELINE")
+
         if not all(state.get(k) for k in required):
+
+            print("MISSING REQUIRED INFO")
 
             return {
                 "message": "Preciso de mais algumas informações antes de gerar o post."
             }
 
+        print("RUNNING GRAPH PIPELINE")
+
         result = graph.invoke(state)
+
+        print("GRAPH RESULT:", result)
 
         # salva novo estado na sessão
         sessions[req.session_id] = result
@@ -113,6 +144,8 @@ def chat(req: ChatRequest):
             "post": result["post_final"],
             "state": result
         }
+
+    print("ASKING USER MORE INFO")
 
     return {
         "message": decision["message"],
