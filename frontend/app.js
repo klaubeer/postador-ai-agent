@@ -64,14 +64,14 @@ try{
 const API_URL = "http://127.0.0.1:8000"
 
 const res = await fetch(`${API_URL}/chat`,{
-  method:'POST',
-  headers:{
-    'Content-Type':'application/json'
-  },
-  body:JSON.stringify({
-    message:texto,
-    session_id:sessionId
-  })
+method:'POST',
+headers:{
+'Content-Type':'application/json'
+},
+body:JSON.stringify({
+message:texto,
+session_id:sessionId
+})
 })
 
 const data = await res.json()
@@ -79,7 +79,7 @@ const data = await res.json()
 console.log("SERVER RESPONSE:", data)
 
 
-// 🖼️ se veio imagem
+// se veio imagem
 if(data.image){
 
 appendImage(data.image)
@@ -89,7 +89,7 @@ return
 }
 
 
-// 🧠 se veio POST completo
+// se veio post final
 if(data.post){
 
 lastPost = data.post
@@ -99,7 +99,7 @@ return
 }
 
 
-// 💬 resposta normal
+// resposta normal
 const resposta =
       data.message
    || data.reply
@@ -136,7 +136,7 @@ chat.scrollTop = chat.scrollHeight
 }
 
 
-// POST FINAL COM BOTÕES
+// POST FINAL
 function appendPost(text){
 
 const div = document.createElement('div')
@@ -164,7 +164,7 @@ chat.scrollTop = chat.scrollHeight
 }
 
 
-// 🖼️ mostrar imagem
+// mostrar imagem
 function appendImage(base64){
 
 const div = document.createElement('div')
@@ -198,7 +198,7 @@ chat.scrollTop = chat.scrollHeight
 }
 
 
-// 🎨 gerar imagem
+// gerar imagem
 async function gerarImagem(){
 
 appendMsg("bot","🎨 Gerando imagem...")
@@ -219,9 +219,23 @@ session_id:sessionId
 
 const data = await res.json()
 
+// erro vindo do backend
+if(data.error){
+
+appendMsg("bot", data.error)
+
+return
+
+}
+
+// imagem válida
+if(data.image){
+
 appendImage(data.image)
 
 lastImage = data.image
+
+}
 
 }catch(err){
 
@@ -234,7 +248,7 @@ appendMsg("bot","Erro ao gerar imagem")
 }
 
 
-// ⬇️ baixar imagem
+// baixar imagem
 function baixarImagem(){
 
 if(!lastImage) return
@@ -249,7 +263,7 @@ link.click()
 }
 
 
-// 📋 copiar post
+// copiar post
 function copiarPost(){
 
 if(!lastPost) return
