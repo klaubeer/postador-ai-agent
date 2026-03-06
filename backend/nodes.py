@@ -79,34 +79,6 @@ Regras:
     return state
 
 
-def generate_image_prompt(state):
-
-    prompt = f"""
-Crie prompt curto para gerar imagem.
-
-Produto/Tema: {state.get("tema")}
-Ideia: {state.get("melhor_ideia")}
-Público: {state.get("publico")}
-
-Regras:
-- máximo 15 palavras
-- imagem deve mostrar o produto
-- estilo visual claro
-"""
-
-    image_prompt = llm(prompt)
-
-    if image_prompt:
-        image_prompt = image_prompt.strip()
-
-    state["image_prompt"] = image_prompt
-
-    # ativa modo de aprovação de imagem
-    state["awaiting_image_approval"] = True
-
-    return state
-
-
 def generate_hashtags(state):
 
     plataforma = state.get("plataforma")
@@ -145,6 +117,32 @@ Retorne apenas palavras separadas por espaço.
 
     return state
 
+def generate_image_prompt(state):
+
+    prompt = f"""
+Crie prompt curto para gerar imagem.
+
+Produto/Tema: {state.get("tema")}
+Ideia: {state.get("melhor_ideia")}
+Público: {state.get("publico")}
+
+Regras:
+- máximo 15 palavras
+- imagem deve mostrar o produto
+- estilo visual claro
+"""
+
+    image_prompt = llm(prompt)
+
+    if image_prompt:
+        image_prompt = image_prompt.strip()
+
+    state["image_prompt"] = image_prompt
+
+    # ativa modo de aprovação de imagem
+    state["awaiting_image_approval"] = True
+
+    return state
 
 def format_post(state):
 
@@ -166,7 +164,6 @@ def format_post(state):
 🖼️ Prompt de imagem
 {image_prompt}
 
-Caso o prompt de imagem esteja de acordo, digite **gerar** para criar a imagem.
 """
 
     return state
