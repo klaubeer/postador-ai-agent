@@ -133,7 +133,7 @@ div.className = "msg bot"
 
 const img = document.createElement('img')
 
-img.src = url
+img.src = "data:image/png;base64," + url
 img.style.maxWidth = "300px"
 img.style.borderRadius = "10px"
 img.style.marginTop = "5px"
