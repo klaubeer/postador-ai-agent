@@ -1,31 +1,113 @@
 # postador-ai-agent
 
-Status: Work in progress
+**Status:** Work in progress
 
-To test / para testar: 
-https://postador-ai-agent.vercel.app/
+**Live demo:**
+[https://postador-ai-agent.vercel.app/](https://postador-ai-agent.vercel.app/)
 
-The PostMaker — AI Content Generation Platform
-Description
 
-Postador is an AI-powered platform designed to help businesses generate social media content quickly and efficiently.
-The system converts simple user descriptions into structured content ready for publication, including post ideas, captions, hashtags, and visual concepts.
-The solution leverages Large Language Models (LLMs) to generate contextualized content tailored to the company's niche and the objective of the post.
-This project demonstrates the use of AI agents and workflow automation to support digital marketing and content production processes.
+# 🇧🇷 Postador — Plataforma de Geração de Conteúdo com IA
 
-Features
+## Visão Geral
 
-Automatic generation of post ideas
-Social media caption generation
-Hashtag suggestions
-Visual concept generation for posts
-Optimized prompts for image generation
-Automated content creation workflows
+O **Postador** é uma plataforma baseada em Inteligência Artificial criada para automatizar a produção de conteúdo para redes sociais.
 
-Architecture
-The system uses an architecture based on AI agents and workflow orchestration, combining text generation, prompt processing, and automated pipelines.
-Simplified flow:
+O sistema transforma descrições simples fornecidas pelo usuário em conteúdo estruturado pronto para publicação, incluindo:
 
+* ideias de posts
+* legendas
+* hashtags
+* conceitos visuais
+
+A solução utiliza **Large Language Models (LLMs)** combinados com **workflows automatizados** para gerar conteúdo contextualizado de acordo com o nicho da empresa e o objetivo da publicação.
+
+Este projeto demonstra a aplicação prática de **agentes de IA, engenharia de prompts e orquestração de workflows** em processos de marketing digital e produção escalável de conteúdo.
+
+---
+
+## Funcionalidades
+
+* Geração automática de ideias de posts
+* Criação de legendas otimizadas para engajamento
+* Sugestão inteligente de hashtags
+* Geração de conceitos visuais para posts
+* Criação de prompts para ferramentas de geração de imagem
+* Automação do fluxo completo de criação de conteúdo
+
+---
+
+## Arquitetura do Sistema
+
+A plataforma utiliza uma arquitetura baseada em **agentes de IA e pipelines automatizados**, onde cada etapa da criação de conteúdo é executada por componentes especializados.
+
+**Fluxo simplificado**
+
+```
+User Input
+   ↓
+Geração de Ideia de Conteúdo (LLM)
+   ↓
+Geração de Legenda + Hashtags
+   ↓
+Geração de Prompt de Imagem
+   ↓
+Conteúdo Estruturado Final
+```
+
+Essa arquitetura modular permite expandir facilmente o sistema com novos agentes, como:
+
+* análise de tendências
+* adaptação ao tom da marca
+* planejamento de campanhas
+* agendamento de posts
+
+---
+
+## Stack Tecnológica
+
+* **Python**
+* **Large Language Models (LLMs)**
+* **AI Agents**
+* **Prompt Engineering**
+* **Automação de Workflows (n8n)**
+* **Integração com APIs**
+* **Supabase**
+* **Banco de dados SQL**
+
+---
+
+# Postador — AI Content Generation Platform
+
+## Overview
+
+Postador is an AI-powered platform designed to automate the creation of social media content for businesses.
+
+The system transforms simple user descriptions into structured content ready for publication, including post ideas, captions, hashtags, and visual concepts.
+
+The platform leverages **Large Language Models (LLMs)** and **AI-driven workflows** to generate contextualized content aligned with the company’s niche, communication style, and marketing objectives.
+
+This project demonstrates the practical use of **AI agents, prompt engineering, and workflow orchestration** to support digital marketing operations and scalable content production.
+
+---
+
+## Key Features
+
+* Automated generation of social media post ideas
+* Caption generation optimized for engagement
+* Hashtag recommendation based on content context
+* Visual concept generation for creative direction
+* Prompt generation optimized for AI image tools
+* Automated content generation pipelines
+
+---
+
+## System Architecture
+
+The platform follows an **AI-agent workflow architecture**, where each step of the content creation process is handled by specialized tasks within an automated pipeline.
+
+**Simplified workflow**
+
+```
 User Input
    ↓
 Content Idea Generation (LLM)
@@ -34,43 +116,26 @@ Caption + Hashtag Generation
    ↓
 Image Prompt Generation
    ↓
-Content Output
+Structured Content Output
+```
 
-Stack
-Python, Large Language Models (LLM), AI Agents, Prompt Engineering, Workflow Automation (n8n), API Integration, Supabase, SQL Databases
+This modular pipeline allows the system to expand easily with additional agents, such as:
 
-=========================================================================
+* trend analysis
+* content scheduling
+* brand tone adaptation
+* campaign strategy generation
 
-🇧🇷 O Postador — Plataforma de Geração de Conteúdo com IA
+---
 
+## Technology Stack
 
-O Postador é uma plataforma baseada em Inteligência Artificial desenvolvida para auxiliar empresas na criação de conteúdo para redes sociais de forma rápida e estruturada.
-O sistema transforma descrições simples fornecidas pelo usuário em conteúdo completo pronto para publicação, incluindo ideias de posts, legendas, hashtags e conceitos visuais.
-A solução utiliza Large Language Models (LLMs) para gerar conteúdo contextualizado de acordo com o nicho da empresa e o objetivo da publicação.
-O projeto demonstra a aplicação de agentes de IA e automação de workflows para apoiar processos de marketing digital e produção de conteúdo.
+* **Python**
+* **Large Language Models (LLMs)**
+* **AI Agents**
+* **Prompt Engineering**
+* **Workflow Automation (n8n)**
+* **API Integrations**
+* **Supabase**
+* **SQL Databases**
 
-Funcionalidades
-
-Geração automática de ideias de posts
-Criação de legendas otimizadas para redes sociais
-Sugestão de hashtags
-Geração de conceitos visuais para posts
-Criação de prompts otimizados para geração de imagens
-Automação de fluxos de criação de conteúdo
-
-Arquitetura
-O sistema utiliza uma arquitetura baseada em agentes de IA e automação de workflows, integrando geração de texto, processamento de prompts e orquestração de tarefas.
-Fluxo simplificado:
-
-User Input
-   ↓
-Content Idea Generation (LLM)
-   ↓
-Caption + Hashtag Generation
-   ↓
-Image Prompt Generation
-   ↓
-Content Output
-
-Stack
-Python, Large Language Models (LLM), AI Agents, Prompt Engineering, Workflow Automation (n8n), API Integration, Supabase, SQL Databases
