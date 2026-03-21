@@ -14,4 +14,4 @@ COPY backend/rag/ backend/rag/
 
 EXPOSE $PORT
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD uvicorn backend.main:app --host 0.0.0.0 --port $PORT
