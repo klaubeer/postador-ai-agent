@@ -28,6 +28,9 @@ Thumbs.db
 # vscode
 .vscode/
 
+# claude code
+.claude/
+
 # cache
 .cache/
 .pytest_cache/
