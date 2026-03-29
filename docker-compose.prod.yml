@@ -9,10 +9,11 @@ services:
       - "8000"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.postador-api.rule=Host(`postador.klauberfischer.online`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.postador-api.entrypoints=websecure"
-      - "traefik.http.routers.postador-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.postador-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.postadorapi.rule=Host(`postador.klauberfischer.online`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.postadorapi.entrypoints=websecure"
+      - "traefik.http.routers.postadorapi.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.postadorapi.priority=100"
+      - "traefik.http.services.postadorapi.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
     networks:
       - proxy
