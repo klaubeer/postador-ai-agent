@@ -11,6 +11,8 @@ class AgentState(TypedDict, total=False):
     detalhes: Optional[str]
 
     # gerados pelo pipeline
+    ideias: Optional[str]
+    melhor_ideia: Optional[str]
     legenda: Optional[str]
     hashtags: Optional[str]
     image_prompt: Optional[str]

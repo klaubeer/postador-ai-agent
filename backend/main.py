@@ -34,8 +34,9 @@ def get_session(session_id: str) -> dict:
                 "tema": None,
                 "publico": None,
                 "detalhes": None,
+                "post_gerado": False,
             },
-            "messages": [],  # histórico de conversa
+            "messages": [],
         }
     return sessions[session_id]
 
@@ -64,10 +65,28 @@ def chat(req: ChatRequest):
     state = session["state"]
     messages = session["messages"]
 
-    # adiciona mensagem do usuário ao histórico
+    # se já gerou post, qualquer mensagem nova reseta pra novo post
+    if state.get("post_gerado"):
+        bot_msg = "Que bom que curtiu! Quer criar outro post? Me conta o tema."
+        messages.append({"role": "user", "content": req.message})
+        messages.append({"role": "assistant", "content": bot_msg})
+
+        # reseta estado pra novo post mas mantém histórico
+        session["state"] = {
+            "objetivo": None,
+            "plataforma": None,
+            "tema": None,
+            "publico": None,
+            "detalhes": None,
+            "post_gerado": False,
+        }
+
+        return {"message": bot_msg}
+
+    # adiciona mensagem ao histórico
     messages.append({"role": "user", "content": req.message})
 
-    # planner decide o fluxo usando histórico completo
+    # planner decide o fluxo
     decision = planner(messages, state, session_id=req.session_id)
 
     state = decision["state"]
@@ -84,28 +103,42 @@ def chat(req: ChatRequest):
         # roda pipeline
         result = graph.invoke(state)
 
-        # atualiza estado com resultado
+        # atualiza estado
         state.update({
+            "ideias": result.get("ideias", ""),
+            "melhor_ideia": result.get("melhor_ideia", ""),
             "legenda": result.get("legenda", ""),
             "hashtags": result.get("hashtags", ""),
             "image_prompt": result.get("image_prompt", ""),
+            "post_gerado": True,
         })
         session["state"] = state
 
-        # gera imagem automaticamente
-        image_result = generate_image(result.get("image_prompt", ""))
-        image_url = image_result.get("image_url", "")
+        # gera imagem
+        image_url = ""
+        image_prompt = result.get("image_prompt", "")
+        if image_prompt:
+            image_result = generate_image(image_prompt)
+            image_url = image_result.get("image_url", "")
+            if image_url:
+                state["image_url"] = image_url
 
-        if image_url:
-            state["image_url"] = image_url
+        # monta post final completo
+        post = ""
 
-        # monta post final
-        post = f"""✍️ Legenda
-{result.get('legenda', '')}"""
+        if result.get("ideias"):
+            post += f"💡 Ideias de post\n{result['ideias']}\n\n"
+
+        if result.get("melhor_ideia"):
+            post += f"🎯 Melhor ideia (detalhada)\n{result['melhor_ideia']}\n\n"
+
+        if result.get("legenda"):
+            post += f"✍️ Legenda\n{result['legenda']}"
 
         if result.get("hashtags"):
             post += f"\n\n🏷️ Hashtags\n{result['hashtags']}"
 
+        post = post.strip()
         state["post_final"] = post
         session["state"] = state
 

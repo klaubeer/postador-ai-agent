@@ -6,6 +6,8 @@ if (!sessionId) {
 }
 
 let lastPost = ""
+let lastLegenda = ""
+let lastHashtags = ""
 let lastImageUrl = ""
 let sending = false
 
@@ -81,6 +83,46 @@ function appendMsg(sender, text) {
 }
 
 
+// ---- parse post sections ----
+
+function parsePost(text) {
+  const sections = {}
+
+  const patterns = [
+    { key: "ideias", regex: /💡\s*Ideias de post\s*\n/i },
+    { key: "melhor_ideia", regex: /🎯\s*Melhor ideia[^\n]*\n/i },
+    { key: "legenda", regex: /✍️\s*Legenda\s*\n?/i },
+    { key: "hashtags", regex: /🏷️\s*Hashtags\s*\n?/i },
+  ]
+
+  // encontra posições de cada seção
+  const found = []
+  for (const p of patterns) {
+    const match = text.match(p.regex)
+    if (match) {
+      found.push({
+        key: p.key,
+        start: match.index + match[0].length,
+        headerEnd: match.index + match[0].length,
+        headerStart: match.index
+      })
+    }
+  }
+
+  // ordena por posição
+  found.sort((a, b) => a.headerStart - b.headerStart)
+
+  // extrai conteúdo entre seções
+  for (let i = 0; i < found.length; i++) {
+    const start = found[i].start
+    const end = i + 1 < found.length ? found[i + 1].headerStart : text.length
+    sections[found[i].key] = text.slice(start, end).trim()
+  }
+
+  return sections
+}
+
+
 // ---- post card ----
 
 function appendPost(text, imageUrl) {
@@ -88,41 +130,59 @@ function appendPost(text, imageUrl) {
   div.className = "msg bot"
   div.style.maxWidth = "100%"
 
-  // separa legenda e hashtags
-  let legenda = ""
-  let hashtags = ""
+  const sections = parsePost(text)
 
-  if (text.includes("Hashtags")) {
-    const parts = text.split(/🏷️\s*Hashtags\s*\n?/)
-    legenda = parts[0].replace(/✍️\s*Legenda\s*\n?/, "").trim()
-    hashtags = (parts[1] || "").trim()
-  } else {
-    legenda = text.replace(/✍️\s*Legenda\s*\n?/, "").trim()
-  }
+  lastLegenda = sections.legenda || ""
+  lastHashtags = sections.hashtags || ""
 
   let imageHtml = ""
   if (imageUrl) {
     imageHtml = `<img class="post-card-image" src="${imageUrl}" alt="Imagem do post" loading="lazy" onerror="this.style.display='none'">`
   }
 
+  let bodyHtml = ""
+
+  if (sections.ideias) {
+    bodyHtml += `
+      <div class="post-card-section">
+        <div class="post-card-label">Ideias de post</div>
+        <div class="post-card-text">${formatText(sections.ideias)}</div>
+      </div>`
+  }
+
+  if (sections.melhor_ideia) {
+    bodyHtml += `
+      <div class="post-card-section">
+        <div class="post-card-label">Melhor ideia — como executar</div>
+        <div class="post-card-text">${formatText(sections.melhor_ideia)}</div>
+      </div>`
+  }
+
+  if (sections.legenda) {
+    bodyHtml += `
+      <div class="post-card-section">
+        <div class="post-card-label">Legenda</div>
+        <div class="post-card-text">${formatText(sections.legenda)}</div>
+      </div>`
+  }
+
+  if (sections.hashtags) {
+    bodyHtml += `
+      <div class="post-card-section">
+        <div class="post-card-label">Hashtags</div>
+        <div class="post-card-hashtags">${sections.hashtags}</div>
+      </div>`
+  }
+
   div.innerHTML = `
     <div class="post-card">
       ${imageHtml}
       <div class="post-card-body">
-        <div class="post-card-section">
-          <div class="post-card-label">Legenda</div>
-          <div class="post-card-text">${formatText(legenda)}</div>
-        </div>
-        ${hashtags ? `
-        <div class="post-card-section">
-          <div class="post-card-label">Hashtags</div>
-          <div class="post-card-hashtags">${hashtags}</div>
-        </div>
-        ` : ""}
+        ${bodyHtml}
       </div>
       <div class="post-card-actions">
-        <button onclick="copiarLegenda()">Copiar legenda</button>
-        ${hashtags ? `<button onclick="copiarHashtags()">Copiar hashtags</button>` : ""}
+        ${sections.legenda ? `<button onclick="copiarLegenda()">Copiar legenda</button>` : ""}
+        ${sections.hashtags ? `<button onclick="copiarHashtags()">Copiar hashtags</button>` : ""}
         ${imageUrl ? `<button onclick="baixarImagem()">Baixar imagem</button>` : ""}
         <button class="primary" onclick="recomecar()">Novo post</button>
       </div>
@@ -160,24 +220,14 @@ function removeTyping(el) {
 // ---- ações ----
 
 function copiarLegenda() {
-  // extrai só a legenda do lastPost
-  let legenda = lastPost
-  if (lastPost.includes("Hashtags")) {
-    legenda = lastPost.split(/🏷️\s*Hashtags/)[0]
-  }
-  legenda = legenda.replace(/✍️\s*Legenda\s*\n?/, "").trim()
-
-  navigator.clipboard.writeText(legenda)
+  if (!lastLegenda) return
+  navigator.clipboard.writeText(lastLegenda)
   showToast("Legenda copiada!")
 }
 
 function copiarHashtags() {
-  let hashtags = ""
-  if (lastPost.includes("Hashtags")) {
-    hashtags = lastPost.split(/🏷️\s*Hashtags\s*\n?/)[1] || ""
-    hashtags = hashtags.trim()
-  }
-  navigator.clipboard.writeText(hashtags)
+  if (!lastHashtags) return
+  navigator.clipboard.writeText(lastHashtags)
   showToast("Hashtags copiadas!")
 }
 
@@ -198,13 +248,11 @@ async function baixarImagem() {
     showToast("Download iniciado!")
   } catch (err) {
     console.error(err)
-    // fallback: abrir em nova aba
     window.open(lastImageUrl, "_blank")
   }
 }
 
 function recomecar() {
-  // reset no backend
   fetch(`${API_URL}/api/reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -215,6 +263,8 @@ function recomecar() {
   sessionStorage.setItem("session_id", sessionId)
 
   lastPost = ""
+  lastLegenda = ""
+  lastHashtags = ""
   lastImageUrl = ""
 
   chat.innerHTML = ""
