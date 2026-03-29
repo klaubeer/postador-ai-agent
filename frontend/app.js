@@ -83,46 +83,6 @@ function appendMsg(sender, text) {
 }
 
 
-// ---- parse post sections ----
-
-function parsePost(text) {
-  const sections = {}
-
-  const patterns = [
-    { key: "ideias", regex: /💡\s*Ideias de post\s*\n/i },
-    { key: "melhor_ideia", regex: /🎯\s*Melhor ideia[^\n]*\n/i },
-    { key: "legenda", regex: /✍️\s*Legenda\s*\n?/i },
-    { key: "hashtags", regex: /🏷️\s*Hashtags\s*\n?/i },
-  ]
-
-  // encontra posições de cada seção
-  const found = []
-  for (const p of patterns) {
-    const match = text.match(p.regex)
-    if (match) {
-      found.push({
-        key: p.key,
-        start: match.index + match[0].length,
-        headerEnd: match.index + match[0].length,
-        headerStart: match.index
-      })
-    }
-  }
-
-  // ordena por posição
-  found.sort((a, b) => a.headerStart - b.headerStart)
-
-  // extrai conteúdo entre seções
-  for (let i = 0; i < found.length; i++) {
-    const start = found[i].start
-    const end = i + 1 < found.length ? found[i + 1].headerStart : text.length
-    sections[found[i].key] = text.slice(start, end).trim()
-  }
-
-  return sections
-}
-
-
 // ---- post card ----
 
 function appendPost(text, imageUrl) {
@@ -130,10 +90,20 @@ function appendPost(text, imageUrl) {
   div.className = "msg bot"
   div.style.maxWidth = "100%"
 
-  const sections = parsePost(text)
+  // parse seções
+  let legenda = ""
+  let hashtags = ""
 
-  lastLegenda = sections.legenda || ""
-  lastHashtags = sections.hashtags || ""
+  if (text.includes("Hashtags")) {
+    const parts = text.split(/🏷️\s*Hashtags\s*\n?/)
+    legenda = parts[0].replace(/✍️\s*Legenda\s*\n?/, "").trim()
+    hashtags = (parts[1] || "").trim()
+  } else {
+    legenda = text.replace(/✍️\s*Legenda\s*\n?/, "").trim()
+  }
+
+  lastLegenda = legenda
+  lastHashtags = hashtags
 
   let imageHtml = ""
   if (imageUrl) {
@@ -142,35 +112,19 @@ function appendPost(text, imageUrl) {
 
   let bodyHtml = ""
 
-  if (sections.ideias) {
-    bodyHtml += `
-      <div class="post-card-section">
-        <div class="post-card-label">Ideias de post</div>
-        <div class="post-card-text">${formatText(sections.ideias)}</div>
-      </div>`
-  }
-
-  if (sections.melhor_ideia) {
-    bodyHtml += `
-      <div class="post-card-section">
-        <div class="post-card-label">Melhor ideia — como executar</div>
-        <div class="post-card-text">${formatText(sections.melhor_ideia)}</div>
-      </div>`
-  }
-
-  if (sections.legenda) {
+  if (legenda) {
     bodyHtml += `
       <div class="post-card-section">
         <div class="post-card-label">Legenda</div>
-        <div class="post-card-text">${formatText(sections.legenda)}</div>
+        <div class="post-card-text">${formatText(legenda)}</div>
       </div>`
   }
 
-  if (sections.hashtags) {
+  if (hashtags) {
     bodyHtml += `
       <div class="post-card-section">
         <div class="post-card-label">Hashtags</div>
-        <div class="post-card-hashtags">${sections.hashtags}</div>
+        <div class="post-card-hashtags">${hashtags}</div>
       </div>`
   }
 
@@ -181,8 +135,8 @@ function appendPost(text, imageUrl) {
         ${bodyHtml}
       </div>
       <div class="post-card-actions">
-        ${sections.legenda ? `<button onclick="copiarLegenda()">Copiar legenda</button>` : ""}
-        ${sections.hashtags ? `<button onclick="copiarHashtags()">Copiar hashtags</button>` : ""}
+        ${legenda ? `<button onclick="copiarLegenda()">Copiar legenda</button>` : ""}
+        ${hashtags ? `<button onclick="copiarHashtags()">Copiar hashtags</button>` : ""}
         ${imageUrl ? `<button onclick="baixarImagem()">Baixar imagem</button>` : ""}
         <button class="primary" onclick="recomecar()">Novo post</button>
       </div>

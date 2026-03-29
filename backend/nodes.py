@@ -1,8 +1,25 @@
 from backend.llm import llm
 
 
-def generate_content(state):
-    """Gera ideias criativas + legenda + hashtags num único prompt robusto."""
+PLATFORM_STYLE = {
+    "instagram": "Linguagem leve, emojis, hashtags, visual para carrossel ou reels.",
+    "tiktok": "Criativo, vídeos curtos, tendências, hashtags fortes.",
+    "facebook": "Explicativo, amigável, com links e engajamento.",
+    "linkedin": "Profissional, direto, com autoridade e storytelling.",
+    "x": "Textos curtos e impactantes, sem exagero de hashtags.",
+    "youtube": "Visual forte, gancho rápido e linguagem envolvente.",
+}
+
+VISUAL_STYLES = {
+    "1": "Realismo — elegante, profissional, realista, sóbrio, bem iluminado",
+    "2": "Visão Futurista — moderno, limpo, tecnológico, futurista, claro",
+    "3": "Surreal — colorido, onírico, exagerado, lúdico, criativo",
+    "4": "Distopia — sombrio, glitch, neon, distópico",
+}
+
+
+def generate_ideas(state):
+    """Gera 3 ideias de post detalhadas para o usuário escolher."""
 
     tema = state.get("tema", "")
     plataforma = state.get("plataforma", "Instagram")
@@ -10,7 +27,10 @@ def generate_content(state):
     publico = state.get("publico", "público geral")
     detalhes = state.get("detalhes", "")
 
-    prompt = f"""Você é um social media expert criativo. Crie o conteúdo completo de um post para redes sociais.
+    plat_key = plataforma.lower().replace("twitter", "x").replace("youtube shorts", "youtube")
+    style_guide = PLATFORM_STYLE.get(plat_key, "Adapte ao tom da plataforma.")
+
+    prompt = f"""Você é um social media expert criativo.
 
 CONTEXTO:
 - Tema/Produto: {tema}
@@ -18,70 +38,93 @@ CONTEXTO:
 - Objetivo: {objetivo}
 - Público-alvo: {publico}
 - Detalhes extras: {detalhes or 'nenhum'}
+- Estilo da plataforma: {style_guide}
 
-ENTREGUE EXATAMENTE NESTE FORMATO (sem markdown extra, sem explicações fora do formato):
+Sugira 3 ideias de post. Cada ideia deve conter:
 
-IDEIAS:
-1. [Primeira ideia criativa de post — descreva o conceito, abordagem e formato sugerido em 2-3 frases]
-2. [Segunda ideia criativa — uma abordagem diferente da primeira]
-3. [Terceira ideia criativa — uma abordagem diferente das anteriores]
+IDEIA 1:
+🎯 Título: [título criativo + tipo de conteúdo (carrossel, reels, post estático, vídeo curto, etc)]
+✍️ Legenda: [legenda envolvente com CTA, adequada para {plataforma}]
+🖼️ Visual: [sugestão do que mostrar na imagem/vídeo]
+🏷️ Hashtags: [5 hashtags relevantes separadas por espaço]
 
-MELHOR IDEIA:
-[Escolha a melhor das 3 ideias acima e explique em detalhes como executar o post: o que mostrar, que texto colocar na imagem/vídeo, qual o gancho pra prender atenção. Seja específico e prático. 3-5 frases.]
+IDEIA 2:
+(mesmo formato)
+
+IDEIA 3:
+(mesmo formato)
+
+Regras:
+- Cada ideia deve ter uma abordagem DIFERENTE
+- Adapte ao público {publico} e ao objetivo de {objetivo}
+- Seja criativo e prático
+- Retorne EXATAMENTE no formato acima"""
+
+    result = llm(prompt)
+    state["ideias_raw"] = result.strip()
+
+    return state
+
+
+def generate_final_post(state):
+    """Gera o post final com base na ideia escolhida e estilo visual."""
+
+    ideia_escolhida = state.get("ideia_escolhida", "")
+    plataforma = state.get("plataforma", "Instagram")
+    publico = state.get("publico", "público geral")
+    estilo_visual = state.get("estilo_visual", "1")
+    tema = state.get("tema", "")
+
+    style_desc = VISUAL_STYLES.get(str(estilo_visual), VISUAL_STYLES["1"])
+
+    prompt = f"""Você é um social media expert.
+
+Com base na ideia de post abaixo, gere o conteúdo FINAL para publicação.
+
+IDEIA ESCOLHIDA:
+{ideia_escolhida}
+
+CONTEXTO:
+- Plataforma: {plataforma}
+- Público: {publico}
+- Tema: {tema}
+- Estilo visual escolhido: {style_desc}
+
+Entregue EXATAMENTE neste formato:
 
 LEGENDA:
-[Escreva uma legenda envolvente e criativa. Máximo 3 frases. Inclua CTA (call-to-action). Use o tom adequado para {plataforma} e {publico}.]
+[Legenda final polida, envolvente, com CTA. Pronta para copiar e colar na {plataforma}.]
 
 HASHTAGS:
-[5 hashtags relevantes e populares, separadas por espaço. Ex: #exemplo1 #exemplo2]"""
+[5-8 hashtags relevantes separadas por espaço]
+
+DESCRICAO_IMAGEM:
+[Descrição visual detalhada para gerar a imagem com IA. Descreva a cena, composição, iluminação. NÃO repita o estilo visual aqui — ele será aplicado automaticamente. Máximo 2 frases em português.]"""
 
     result = llm(prompt)
 
-    # parse do resultado
-    ideias = ""
-    melhor_ideia = ""
+    # parse
     legenda = ""
     hashtags = ""
+    descricao_imagem = ""
 
     sections = {}
     current_section = None
     current_lines = []
 
     for line in result.split("\n"):
-        line_stripped = line.strip()
+        stripped = line.strip()
 
-        if line_stripped.startswith("IDEIAS:"):
-            if current_section:
-                sections[current_section] = "\n".join(current_lines).strip()
-            current_section = "ideias"
-            current_lines = []
-            rest = line_stripped.replace("IDEIAS:", "").strip()
-            if rest:
-                current_lines.append(rest)
-        elif line_stripped.startswith("MELHOR IDEIA:"):
-            if current_section:
-                sections[current_section] = "\n".join(current_lines).strip()
-            current_section = "melhor_ideia"
-            current_lines = []
-            rest = line_stripped.replace("MELHOR IDEIA:", "").strip()
-            if rest:
-                current_lines.append(rest)
-        elif line_stripped.startswith("LEGENDA:"):
-            if current_section:
-                sections[current_section] = "\n".join(current_lines).strip()
-            current_section = "legenda"
-            current_lines = []
-            rest = line_stripped.replace("LEGENDA:", "").strip()
-            if rest:
-                current_lines.append(rest)
-        elif line_stripped.startswith("HASHTAGS:"):
-            if current_section:
-                sections[current_section] = "\n".join(current_lines).strip()
-            current_section = "hashtags"
-            current_lines = []
-            rest = line_stripped.replace("HASHTAGS:", "").strip()
-            if rest:
-                current_lines.append(rest)
+        for label, key in [("LEGENDA:", "legenda"), ("HASHTAGS:", "hashtags"), ("DESCRICAO_IMAGEM:", "descricao_imagem")]:
+            if stripped.startswith(label):
+                if current_section:
+                    sections[current_section] = "\n".join(current_lines).strip()
+                current_section = key
+                current_lines = []
+                rest = stripped.replace(label, "").strip()
+                if rest:
+                    current_lines.append(rest)
+                break
         else:
             if current_section:
                 current_lines.append(line)
@@ -89,50 +132,42 @@ HASHTAGS:
     if current_section:
         sections[current_section] = "\n".join(current_lines).strip()
 
-    ideias = sections.get("ideias", "")
-    melhor_ideia = sections.get("melhor_ideia", "")
     legenda = sections.get("legenda", "")
     hashtags = sections.get("hashtags", "")
+    descricao_imagem = sections.get("descricao_imagem", "")
 
-    # garante formato das hashtags
+    # garante formato hashtags
     if hashtags:
         tags = hashtags.replace("\n", " ").replace(",", " ").split()
         tags = [t if t.startswith("#") else f"#{t}" for t in tags if t]
-        hashtags = " ".join(tags[:5])
+        hashtags = " ".join(tags[:8])
 
-    state["ideias"] = ideias
-    state["melhor_ideia"] = melhor_ideia
     state["legenda"] = legenda
     state["hashtags"] = hashtags
+    state["descricao_imagem"] = descricao_imagem
 
     return state
 
 
 def generate_image_prompt(state):
-    """Gera um prompt detalhado para geração de imagem."""
+    """Converte a descrição visual + estilo em prompt de IA para imagem."""
 
-    tema = state.get("tema", "")
-    melhor_ideia = state.get("melhor_ideia", "")
-    plataforma = state.get("plataforma", "Instagram")
-    publico = state.get("publico", "")
-    detalhes = state.get("detalhes", "")
+    descricao = state.get("descricao_imagem", "")
+    estilo_visual = state.get("estilo_visual", "1")
 
-    prompt = f"""You are an expert at writing prompts for AI image generators (Stable Diffusion / FLUX).
+    style_desc = VISUAL_STYLES.get(str(estilo_visual), VISUAL_STYLES["1"])
 
-Create a detailed image prompt for a social media post.
+    prompt = f"""You are an expert at writing prompts for AI image generators (FLUX / Stable Diffusion).
 
-CONTEXT:
-- Product/Theme: {tema}
-- Post concept: {melhor_ideia}
-- Platform: {plataforma}
-- Audience: {publico or 'general'}
-- Extra details: {detalhes or 'none'}
+Convert this visual description into an optimized image generation prompt.
+
+VISUAL DESCRIPTION: {descricao}
+VISUAL STYLE: {style_desc}
 
 RULES:
 - Write in English
-- Be specific about: subject, composition, lighting, color palette, style
-- Make it visually striking and scroll-stopping
-- Appropriate for {plataforma}
+- Include: subject, composition, lighting, color palette, mood
+- Apply the visual style to the entire scene
 - Maximum 60 words
 - Do NOT include text/words in the image
 - Return ONLY the prompt, nothing else"""
