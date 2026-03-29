@@ -2,75 +2,66 @@
 <html lang="pt-BR">
 
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>🤖 O Postador - AI Agent</title>
-
+<title>Postador — Crie posts com IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-
 </head>
-
 
 <body>
 
-<div id="container">
+<div id="app">
 
+  <!-- header -->
+  <header id="header">
+    <div id="logo">
+      <span class="logo-icon">◆</span>
+      <span class="logo-text">Postador</span>
+    </div>
+    <button id="resetBtn" onclick="recomecar()" title="Nova conversa">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 1 3.3-6.9"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+    </button>
+  </header>
 
-<!-- idioma -->
+  <!-- chat -->
+  <main id="chat">
+    <div class="msg bot">
+      <div class="msg-content">
+        Oi! Eu sou o <strong>Postador</strong> — te ajudo a criar posts incríveis para redes sociais.<br><br>
+        Me conta: o que você quer divulgar?
+      </div>
+    </div>
+  </main>
 
-<div id="lang" style="text-align:right;padding:8px;font-size:14px">
-
-<button onclick="setLang('pt')">🇧🇷 PT</button>
-<button onclick="setLang('en')">🇺🇸 EN</button>
-
-</div>
-
-
-<!-- chat -->
-
-<div id="chat"></div>
-
-
-<!-- mensagem inicial -->
-
-<div style="padding:10px;background:#f9f9f9;text-align:center;font-size:14px">
-
-<div id="welcome"></div>
-
-</div>
-
-
-<!-- input -->
-
-<div id="input-area">
-
-<input
-id="msg"
-placeholder=""
-onkeydown="if(event.key==='Enter') enviar()"
->
-
-<button id="sendBtn" onclick="enviar()"></button>
-
-</div>
-
-
-<!-- footer -->
-
-<div style="text-align:center;padding:8px;font-size:13px;color:#aaa">
-
-Powered by <b>Klauber Fischer</b> — T2K
-
-</div>
-
+  <!-- input -->
+  <div id="input-area">
+    <div id="input-wrapper">
+      <input
+        id="msg"
+        type="text"
+        placeholder="Descreva o que você quer postar..."
+        autocomplete="off"
+      >
+      <button id="sendBtn" onclick="enviar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div id="footer">
+      Feito por <strong>Klauber Fischer</strong>
+    </div>
+  </div>
 
 </div>
-
 
 <script src="app.js"></script>
 
 </body>
-
 </html>

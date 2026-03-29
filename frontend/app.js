@@ -1,308 +1,273 @@
-let lang = localStorage.getItem("lang") || "pt"
-
-// cria session id se não existir
+// ---- sessão ----
 let sessionId = sessionStorage.getItem("session_id")
-
 if (!sessionId) {
-    sessionId = crypto.randomUUID()
-    sessionStorage.setItem("session_id", sessionId)
+  sessionId = crypto.randomUUID()
+  sessionStorage.setItem("session_id", sessionId)
 }
-
-console.log("SESSION:", sessionId)
 
 let lastPost = ""
-let lastImage = ""
+let lastImageUrl = ""
+let sending = false
 
 const API_URL = window.location.hostname === "localhost"
-? "http://127.0.0.1:8000"
-: "https://postador-ai-agent.onrender.com"
-
-const texts = {
-
-pt:{
-welcome:"👋 Olá! Eu sou <b>O Postador 🤖</b><br>Digite Oi para começar!",
-placeholder:"Digite sua mensagem...",
-send:"Enviar"
-},
-
-en:{
-welcome:"👋 Hello! I'm <b>The Poster 🤖</b><br>Type Hi to start!",
-placeholder:"Type your message...",
-send:"Send"
-}
-
-}
-
-
-function setLang(l){
-
-lang = l
-
-localStorage.setItem("lang",l)
-
-document.getElementById("welcome").innerHTML = texts[l].welcome
-document.getElementById("msg").placeholder = texts[l].placeholder
-document.getElementById("sendBtn").innerText = texts[l].send
-
-}
-
-
-window.onload = function(){
-setLang(lang)
-}
-
-
-async function enviar(){
-
-const input = document.getElementById('msg')
-const texto = input.value.trim()
-
-if(!texto) return
-
-appendMsg('user', texto)
-
-input.value = ''
-
-try{
-
-const res = await fetch(`${API_URL}/chat`,{
-method:'POST',
-headers:{
-'Content-Type':'application/json'
-},
-body:JSON.stringify({
-message:texto,
-session_id:sessionId
-})
-})
-
-const data = await res.json()
-
-console.log("SERVER RESPONSE:", data)
-
-if(data.image){
-
-appendImage(data.image)
-lastImage = data.image
-return
-
-}
-
-if(data.post){
-
-lastPost = data.post
-appendPost(data.post)
-return
-
-}
-
-const resposta =
-      data.message
-   || data.reply
-   || "Erro ao gerar resposta"
-
-appendMsg('bot', resposta)
-
-}catch(err){
-
-console.error(err)
-
-appendMsg('bot','Erro ao conectar com o servidor')
-
-}
-
-}
-
-
-// mensagem simples
-function appendMsg(sender,text){
-
-const div = document.createElement('div')
-
-div.className = `msg ${sender}`
-
-div.innerHTML = linkify(text)
-
-const chat = document.getElementById('chat')
-
-chat.appendChild(div)
-
-chat.scrollTop = chat.scrollHeight
-
-}
-
-
-// POST FINAL
-function appendPost(text){
-
-const div = document.createElement('div')
-
-div.className = "msg bot"
-
-div.innerHTML = `
-<div>${linkify(text)}</div>
-
-<div style="margin-top:10px">
-
-<button onclick="gerarImagem()">🎨 Gerar imagem</button>
-
-<button onclick="copiarPost()">📋 Copiar post</button>
-
-<button onclick="recomecar()">🔄 Recomeçar</button>
-
-</div>
-`
-
-const chat = document.getElementById('chat')
-
-chat.appendChild(div)
-
-chat.scrollTop = chat.scrollHeight
-
-}
-
-
-// mostrar imagem
-function appendImage(base64){
-
-const div = document.createElement('div')
-
-div.className = "msg bot"
-
-const img = document.createElement('img')
-
-img.src = "data:image/png;base64," + base64
-img.style.maxWidth = "300px"
-img.style.borderRadius = "10px"
-img.style.marginTop = "5px"
-
-div.appendChild(img)
-
-const btns = document.createElement("div")
-btns.style.marginTop = "10px"
-
-btns.innerHTML = `
-<button onclick="baixarImagem()">⬇️ Baixar</button>
-<button onclick="recomecar()">🔄 Novo post</button>
-`
-
-div.appendChild(btns)
-
-const chat = document.getElementById('chat')
-
-chat.appendChild(div)
-
-chat.scrollTop = chat.scrollHeight
-
-}
-
-
-// gerar imagem
-async function gerarImagem(){
-
-appendMsg("bot","🎨 Gerando imagem...")
-
-try{
-
-const res = await fetch(`${API_URL}/gerar-imagem`,{
-method:'POST',
-headers:{
-'Content-Type':'application/json'
-},
-body:JSON.stringify({
-session_id:sessionId
-})
-})
-
-const data = await res.json()
-
-if(data.error){
-
-appendMsg("bot", data.error)
-return
-
-}
-
-if(data.image){
-
-appendImage(data.image)
-lastImage = data.image
-
-}
-
-}catch(err){
-
-console.error(err)
-
-appendMsg("bot","Erro ao gerar imagem")
-
-}
-
-}
-
-
-// baixar imagem
-function baixarImagem(){
-
-if(!lastImage) return
-
-const link = document.createElement("a")
-
-link.href = "data:image/png;base64," + lastImage
-link.download = "post.png"
-
-link.click()
-
-}
-
-
-// copiar post
-function copiarPost(){
-
-if(!lastPost) return
-
-navigator.clipboard.writeText(lastPost)
-
-appendMsg("bot","✅ Post copiado!")
-
-}
-
-
-// RECOMEÇAR CONVERSA
-function recomecar(){
-
-sessionId = crypto.randomUUID()
-sessionStorage.setItem("session_id", sessionId)
-
-lastPost = ""
-lastImage = ""
+  ? "http://127.0.0.1:8000"
+  : ""
 
 const chat = document.getElementById("chat")
+const input = document.getElementById("msg")
+const sendBtn = document.getElementById("sendBtn")
 
-chat.innerHTML = ""
 
-appendMsg("bot", texts[lang].welcome)
+// ---- enviar mensagem ----
 
-console.log("NEW SESSION:", sessionId)
+async function enviar() {
+  const texto = input.value.trim()
+  if (!texto || sending) return
 
+  appendMsg("user", texto)
+  input.value = ""
+  setSending(true)
+
+  const typing = showTyping()
+
+  try {
+    const res = await fetch(`${API_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: texto, session_id: sessionId })
+    })
+
+    const data = await res.json()
+
+    removeTyping(typing)
+
+    if (data.post) {
+      lastPost = data.post
+      lastImageUrl = data.image_url || ""
+      appendPost(data.post, data.image_url)
+      return
+    }
+
+    appendMsg("bot", data.message || "Erro ao gerar resposta.")
+
+  } catch (err) {
+    console.error(err)
+    removeTyping(typing)
+    appendMsg("bot", "Erro ao conectar com o servidor.")
+  } finally {
+    setSending(false)
+  }
 }
 
 
-// linkify
-function linkify(text){
+// ---- controle de envio ----
 
-return text
-.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
-.replace(/(https?:\/\/[^\s)]+)/g,'<a href="$1" target="_blank">$1</a>')
-.replace(/\n/g,'<br>')
-
+function setSending(val) {
+  sending = val
+  sendBtn.disabled = val
+  input.disabled = val
+  if (!val) input.focus()
 }
 
 
-document.getElementById("msg").addEventListener("keydown",function(e){
+// ---- mensagem simples ----
 
-if(e.key==="Enter"){
-enviar()
+function appendMsg(sender, text) {
+  const div = document.createElement("div")
+  div.className = `msg ${sender}`
+  div.innerHTML = `<div class="msg-content">${formatText(text)}</div>`
+  chat.appendChild(div)
+  scrollToBottom()
 }
 
+
+// ---- post card ----
+
+function appendPost(text, imageUrl) {
+  const div = document.createElement("div")
+  div.className = "msg bot"
+  div.style.maxWidth = "100%"
+
+  // separa legenda e hashtags
+  let legenda = ""
+  let hashtags = ""
+
+  if (text.includes("Hashtags")) {
+    const parts = text.split(/🏷️\s*Hashtags\s*\n?/)
+    legenda = parts[0].replace(/✍️\s*Legenda\s*\n?/, "").trim()
+    hashtags = (parts[1] || "").trim()
+  } else {
+    legenda = text.replace(/✍️\s*Legenda\s*\n?/, "").trim()
+  }
+
+  let imageHtml = ""
+  if (imageUrl) {
+    imageHtml = `<img class="post-card-image" src="${imageUrl}" alt="Imagem do post" loading="lazy" onerror="this.style.display='none'">`
+  }
+
+  div.innerHTML = `
+    <div class="post-card">
+      ${imageHtml}
+      <div class="post-card-body">
+        <div class="post-card-section">
+          <div class="post-card-label">Legenda</div>
+          <div class="post-card-text">${formatText(legenda)}</div>
+        </div>
+        ${hashtags ? `
+        <div class="post-card-section">
+          <div class="post-card-label">Hashtags</div>
+          <div class="post-card-hashtags">${hashtags}</div>
+        </div>
+        ` : ""}
+      </div>
+      <div class="post-card-actions">
+        <button onclick="copiarLegenda()">Copiar legenda</button>
+        ${hashtags ? `<button onclick="copiarHashtags()">Copiar hashtags</button>` : ""}
+        ${imageUrl ? `<button onclick="baixarImagem()">Baixar imagem</button>` : ""}
+        <button class="primary" onclick="recomecar()">Novo post</button>
+      </div>
+    </div>
+  `
+
+  chat.appendChild(div)
+  scrollToBottom()
+}
+
+
+// ---- typing indicator ----
+
+function showTyping() {
+  const div = document.createElement("div")
+  div.className = "msg typing"
+  div.id = "typing-indicator"
+  div.innerHTML = `
+    <div class="msg-content">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `
+  chat.appendChild(div)
+  scrollToBottom()
+  return div
+}
+
+function removeTyping(el) {
+  if (el && el.parentNode) el.parentNode.removeChild(el)
+}
+
+
+// ---- ações ----
+
+function copiarLegenda() {
+  // extrai só a legenda do lastPost
+  let legenda = lastPost
+  if (lastPost.includes("Hashtags")) {
+    legenda = lastPost.split(/🏷️\s*Hashtags/)[0]
+  }
+  legenda = legenda.replace(/✍️\s*Legenda\s*\n?/, "").trim()
+
+  navigator.clipboard.writeText(legenda)
+  showToast("Legenda copiada!")
+}
+
+function copiarHashtags() {
+  let hashtags = ""
+  if (lastPost.includes("Hashtags")) {
+    hashtags = lastPost.split(/🏷️\s*Hashtags\s*\n?/)[1] || ""
+    hashtags = hashtags.trim()
+  }
+  navigator.clipboard.writeText(hashtags)
+  showToast("Hashtags copiadas!")
+}
+
+async function baixarImagem() {
+  if (!lastImageUrl) return
+
+  try {
+    const res = await fetch(lastImageUrl)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "postador-imagem.png"
+    link.click()
+
+    URL.revokeObjectURL(url)
+    showToast("Download iniciado!")
+  } catch (err) {
+    console.error(err)
+    // fallback: abrir em nova aba
+    window.open(lastImageUrl, "_blank")
+  }
+}
+
+function recomecar() {
+  // reset no backend
+  fetch(`${API_URL}/api/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId })
+  }).catch(() => {})
+
+  sessionId = crypto.randomUUID()
+  sessionStorage.setItem("session_id", sessionId)
+
+  lastPost = ""
+  lastImageUrl = ""
+
+  chat.innerHTML = ""
+
+  appendMsg("bot", 'Oi! Eu sou o <strong>Postador</strong> — te ajudo a criar posts incríveis para redes sociais.<br><br>Me conta: o que você quer divulgar?')
+}
+
+
+// ---- toast ----
+
+function showToast(text) {
+  const existing = document.querySelector(".toast")
+  if (existing) existing.remove()
+
+  const toast = document.createElement("div")
+  toast.className = "toast"
+  toast.textContent = text
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #8b5cf6;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    z-index: 100;
+    animation: fadeIn 0.3s ease;
+  `
+  document.body.appendChild(toast)
+  setTimeout(() => toast.remove(), 2000)
+}
+
+
+// ---- utils ----
+
+function formatText(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>")
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    chat.scrollTop = chat.scrollHeight
+  })
+}
+
+
+// ---- keyboard ----
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") enviar()
 })

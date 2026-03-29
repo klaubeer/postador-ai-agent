@@ -2,16 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Instala deps primeiro (cache layer!)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia código
-COPY . .
+COPY backend/ backend/
 
-# RAG files persistem via volume, mas copia se local
-COPY backend/rag/ backend/rag/
+EXPOSE 8000
 
-EXPOSE $PORT
-
-CMD uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

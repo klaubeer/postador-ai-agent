@@ -1,9 +1,11 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from backend.agent_graph import graph
 from backend.planner import planner
+from backend.image_gen import generate_image
+from backend.llm import reset_session
 
 app = FastAPI()
 
@@ -15,27 +17,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # -------------------------
-# sessão simples em memória
+# sessão em memória
 # -------------------------
 
-sessions = {}
+sessions: dict[str, dict] = {}
 
-def get_session_state(session_id: str):
+
+def get_session(session_id: str) -> dict:
     if session_id not in sessions:
         sessions[session_id] = {
-            "objetivo": None,
-            "plataforma": None,
-            "tema": None,
-            "publico": None,
-            "image_prompt": None,
-            "image_url": None
+            "state": {
+                "objetivo": None,
+                "plataforma": None,
+                "tema": None,
+                "publico": None,
+                "detalhes": None,
+            },
+            "messages": [],  # histórico de conversa
         }
     return sessions[session_id]
 
 
 # -------------------------
-# request schema
+# schemas
 # -------------------------
 
 class ChatRequest(BaseModel):
@@ -48,111 +54,106 @@ class ImageRequest(BaseModel):
 
 
 # -------------------------
-# CHAT ENDPOINT
+# CHAT
 # -------------------------
 
-@app.post("/chat")
+@app.post("/api/chat")
 def chat(req: ChatRequest):
 
-    print("\n===== NEW REQUEST =====")
-    print("SESSION:", req.session_id)
-    print("MESSAGE RECEIVED:", req.message)
+    session = get_session(req.session_id)
+    state = session["state"]
+    messages = session["messages"]
 
-    state = get_session_state(req.session_id)
+    # adiciona mensagem do usuário ao histórico
+    messages.append({"role": "user", "content": req.message})
 
-    print("CURRENT STATE:", state)
-
-    # planner decide fluxo
-    decision = planner(req.message, state)
-
-    print("PLANNER DECISION:", decision)
+    # planner decide o fluxo usando histórico completo
+    decision = planner(messages, state, session_id=req.session_id)
 
     state = decision["state"]
+    session["state"] = state
 
-    # -------------------------
-    # gerar post
-    # -------------------------
-
+    # --- gerar post ---
     if decision["action"] == "run_post_pipeline":
 
-        print("ACTION: RUN POST PIPELINE")
-
-        # só precisamos de tema
         if not state.get("tema"):
+            bot_msg = "Qual é o tema ou produto do post?"
+            messages.append({"role": "assistant", "content": bot_msg})
+            return {"message": bot_msg}
 
-            print("MISSING THEME")
-
-            sessions[req.session_id] = state
-
-            return {
-                "message": "Qual é o tema ou produto do post?"
-            }
-
-        print("RUNNING GRAPH PIPELINE")
-
+        # roda pipeline
         result = graph.invoke(state)
 
-        print("GRAPH RESULT:", result)
+        # atualiza estado com resultado
+        state.update({
+            "legenda": result.get("legenda", ""),
+            "hashtags": result.get("hashtags", ""),
+            "image_prompt": result.get("image_prompt", ""),
+        })
+        session["state"] = state
 
-        sessions[req.session_id] = result
+        # gera imagem automaticamente
+        image_result = generate_image(result.get("image_prompt", ""))
+        image_url = image_result.get("image_url", "")
+
+        if image_url:
+            state["image_url"] = image_url
+
+        # monta post final
+        post = f"""✍️ Legenda
+{result.get('legenda', '')}"""
+
+        if result.get("hashtags"):
+            post += f"\n\n🏷️ Hashtags\n{result['hashtags']}"
+
+        state["post_final"] = post
+        session["state"] = state
+
+        messages.append({"role": "assistant", "content": post})
 
         return {
-            "post": result["post_final"],
-            "state": result
+            "post": post,
+            "image_url": image_url,
         }
 
-    # -------------------------
-    # continuar conversa
-    # -------------------------
+    # --- continuar conversa ---
+    bot_msg = decision["message"]
+    messages.append({"role": "assistant", "content": bot_msg})
 
-    print("ASKING USER MORE INFO")
-
-    sessions[req.session_id] = state
-
-    return {
-        "message": decision["message"],
-        "state": state
-    }
+    return {"message": bot_msg}
 
 
 # -------------------------
-# IMAGE GENERATION
+# GERAR NOVA IMAGEM (fallback manual)
 # -------------------------
 
-@app.post("/gerar-imagem")
+@app.post("/api/gerar-imagem")
 def gerar_imagem(req: ImageRequest):
 
-    print("\n===== IMAGE GENERATION =====")
-    print("SESSION:", req.session_id)
-
-    state = get_session_state(req.session_id)
+    session = get_session(req.session_id)
+    state = session["state"]
 
     prompt = state.get("image_prompt")
 
-    print("IMAGE PROMPT:", prompt)
-
     if not prompt:
-        return {
-            "error": "Prompt de imagem não encontrado."
-        }
-
-    from backend.image_gen import generate_image
+        return {"error": "Nenhum prompt de imagem disponível."}
 
     result = generate_image(prompt)
 
     if "error" in result:
-
-        print("IMAGE GENERATION FAILED:", result["error"])
-
         return result
 
-    image = result["image"]
+    state["image_url"] = result["image_url"]
+    return {"image_url": result["image_url"]}
 
-    print("IMAGE GENERATED")
 
-    state["image_url"] = image
-    sessions[req.session_id] = state
+# -------------------------
+# RESET
+# -------------------------
 
-    return {
-        "image": image
-    }
+@app.post("/api/reset")
+def reset(req: ImageRequest):
+    session_id = req.session_id
+    sessions.pop(session_id, None)
+    reset_session(session_id)
+    return {"ok": True}

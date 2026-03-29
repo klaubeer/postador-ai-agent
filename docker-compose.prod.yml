@@ -1,0 +1,43 @@
+services:
+
+  postador-backend:
+    build: .
+    container_name: postador-backend
+    env_file:
+      - .env.prod
+    expose:
+      - "8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.postador-api.rule=Host(`postador.klauberfischer.online`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.postador-api.entrypoints=websecure"
+      - "traefik.http.routers.postador-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.postador-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=proxy"
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  postador-frontend:
+    image: nginx:alpine
+    container_name: postador-frontend
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    expose:
+      - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.postador.rule=Host(`postador.klauberfischer.online`)"
+      - "traefik.http.routers.postador.entrypoints=websecure"
+      - "traefik.http.routers.postador.tls.certresolver=letsencrypt"
+      - "traefik.http.services.postador.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy"
+      # prioridade menor que o backend (API tem PathPrefix mais específico)
+      - "traefik.http.routers.postador.priority=1"
+    networks:
+      - proxy
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true

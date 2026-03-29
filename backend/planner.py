@@ -1,110 +1,85 @@
 import json
-from backend.llm import llm
+from backend.llm import llm_chat
 
 
-SYSTEM_PROMPT = """
-Você é **O Postador 🤖**, um assistente criativo que ajuda a criar posts para redes sociais.
+SYSTEM_PROMPT = """Você é o Postador, um assistente criativo que ajuda a criar posts para redes sociais.
 
-Seu papel é coletar informações conversando com o usuário, uma pergunta por vez.
+Seu objetivo é entender o que o usuário quer e coletar contexto de forma natural, conversando — sem parecer um formulário.
 
-Campos a coletar (todos opcionais):
-- objetivo (vender, engajar, educar, inspirar, entreter)
-- plataforma (Instagram, TikTok, LinkedIn, Facebook, X, YouTube)
-- tema ou produto
-- público
+## Informações que você precisa coletar (extraia do que o usuário diz, não pergunte uma por uma):
+- tema: produto, serviço ou assunto do post
+- plataforma: onde vai postar (Instagram, TikTok, LinkedIn, etc)
+- objetivo: vender, engajar, educar, inspirar, entreter
+- publico: para quem é o post
+- detalhes: qualquer informação extra relevante (tom, estilo, promoção, etc)
 
-REGRAS OBRIGATÓRIAS:
-1. Verifique o estado atual antes de perguntar qualquer coisa.
-2. Se um campo já tem valor no estado, NÃO pergunte sobre ele novamente.
-3. Pergunte apenas sobre o próximo campo que ainda está vazio (null).
-4. Faça apenas UMA pergunta por vez.
-5. Quando o tema estiver preenchido, você já pode gerar o post.
+## Regras:
+1. Seja amigável, direto e criativo. Respostas curtas.
+2. Extraia o máximo de informações implícitas da mensagem do usuário.
+3. Se o usuário disser "quero vender meus bolos no Instagram", você já tem tema, plataforma e objetivo — não pergunte de novo.
+4. Só pergunte o que realmente falta e é importante. O campo "tema" é obrigatório. Os outros são opcionais.
+5. Quando tiver pelo menos o tema, e o usuário parecer pronto (ou disser "gera", "pode fazer", "manda", "vai", "ok"), acione o pipeline.
+6. Você NÃO gera o post. Outro sistema faz isso.
+7. Nunca repita informações que o usuário já deu.
 
-Quando o tema estiver preenchido, ou quando o usuário disser algo como
-"pode gerar", "é isso", "vamos nessa", "gera", "ok", "tá bom":
-execute: run_post_pipeline.
-
-Estilo: amigável, direto, respostas curtas.
-
-Você NÃO gera o post. A geração é feita por outro sistema.
-
-Responda SOMENTE em JSON:
-
+## Formato de resposta (JSON obrigatório):
 {
- "action": "ask_user | run_post_pipeline",
- "message": "mensagem para o usuário",
- "state_updates": {
-   "objetivo": null,
-   "plataforma": null,
-   "tema": null,
-   "publico": null
- }
+  "action": "ask_user" ou "run_post_pipeline",
+  "message": "sua mensagem para o usuário",
+  "state_updates": {
+    "tema": null,
+    "plataforma": null,
+    "objetivo": null,
+    "publico": null,
+    "detalhes": null
+  }
 }
 
-Em state_updates, preencha APENAS os campos que o usuário informou NESSA mensagem. Deixe null para os demais.
-"""
+Em state_updates, preencha APENAS campos que o usuário informou. Deixe null os demais."""
 
 
-def extract_json(text: str):
+def planner(messages: list, state: dict, session_id: str = None) -> dict:
+
+    # monta contexto do estado atual
+    state_context = "\n".join(
+        f"- {k}: {v}" for k, v in state.items()
+        if v and k in ("tema", "plataforma", "objetivo", "publico", "detalhes")
+    )
+
+    context_msg = "Estado atual da conversa:\n"
+    if state_context:
+        context_msg += state_context
+    else:
+        context_msg += "(nenhuma informação coletada ainda)"
+
+    # injeta contexto como mensagem de sistema auxiliar
+    full_messages = [{"role": "system", "content": context_msg}] + messages
+
+    result = llm_chat(
+        messages=full_messages,
+        system=SYSTEM_PROMPT,
+        session_id=session_id,
+        json_mode=True
+    )
 
     try:
-        start = text.find("{")
-        end = text.rfind("}") + 1
-        return json.loads(text[start:end])
-    except Exception:
-
-        print("\n❌ LLM retornou JSON inválido:")
-        print(text)
-        print("--------------------------------------------------\n")
-
-        return {
+        decision = json.loads(result)
+    except json.JSONDecodeError:
+        print(f"[PLANNER] JSON inválido: {result}")
+        decision = {
             "action": "ask_user",
-            "message": "Desculpe, houve um erro. Pode repetir?",
+            "message": "Desculpe, pode repetir?",
             "state_updates": {}
         }
 
-
-def planner(user_input: str, state: dict):
-
-    prompt = f"""
-Estado atual da conversa:
-
-objetivo: {state.get("objetivo")}
-plataforma: {state.get("plataforma")}
-tema: {state.get("tema")}
-publico: {state.get("publico")}
-
-Mensagem do usuário:
-{user_input}
-"""
-
-    full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
-
-    print("\n========== PROMPT ENVIADO AO LLM ==========")
-    print(full_prompt)
-    print("===========================================\n")
-
-    result = llm(full_prompt)
-
-    print("\n========== RESPOSTA BRUTA DO LLM ==========")
-    print(result)
-    print("===========================================\n")
-
-    decision = extract_json(result)
-
-    print("\n========== DECISÃO PARSEADA ==========")
-    print(decision)
-    print("======================================\n")
-
-    # Atualiza estado da conversa
+    # atualiza estado
     updates = decision.get("state_updates", {})
-
     for key, value in updates.items():
         if value:
             state[key] = value
 
     return {
         "action": decision.get("action", "ask_user"),
-        "message": decision.get("message", "Ok."),
+        "message": decision.get("message", "Como posso ajudar?"),
         "state": state
     }

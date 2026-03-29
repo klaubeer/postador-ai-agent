@@ -1,184 +1,91 @@
 from backend.llm import llm
 
 
-# -------------------------
-# IDEIA
-# -------------------------
+def generate_content(state):
+    """Gera legenda + hashtags num único prompt robusto."""
 
-def generate_idea(state):
+    tema = state.get("tema", "")
+    plataforma = state.get("plataforma", "Instagram")
+    objetivo = state.get("objetivo", "engajar")
+    publico = state.get("publico", "público geral")
+    detalhes = state.get("detalhes", "")
 
-    prompt = f"""
-Crie uma ideia de post para redes sociais.
+    prompt = f"""Você é um social media expert. Crie o conteúdo de um post para redes sociais.
 
-Produto/Tema: {state.get("tema")}
-Plataforma: {state.get("plataforma")}
-Público: {state.get("publico")}
-Objetivo: {state.get("objetivo")}
+CONTEXTO:
+- Tema/Produto: {tema}
+- Plataforma: {plataforma}
+- Objetivo: {objetivo}
+- Público-alvo: {publico}
+- Detalhes extras: {detalhes or 'nenhum'}
 
-Regras:
-- máximo 50 palavras
-- explicar claramente o conceito do post
-- usar o produto ou tema
-- pensar no público
-- sem hashtags
-"""
+ENTREGUE EXATAMENTE NESTE FORMATO (sem markdown, sem explicações):
 
-    ideia = llm(prompt)
+LEGENDA:
+[Escreva uma legenda criativa, envolvente, com CTA. Máximo 3 frases. Adequada para {plataforma}.]
 
-    if ideia:
-        ideia = ideia.strip()
+HASHTAGS:
+[5 hashtags relevantes e populares, separadas por espaço. Ex: #exemplo1 #exemplo2]"""
 
-    state["melhor_ideia"] = ideia or ""
+    result = llm(prompt)
 
-    return state
+    # parse do resultado
+    legenda = ""
+    hashtags = ""
 
+    if "LEGENDA:" in result and "HASHTAGS:" in result:
+        parts = result.split("HASHTAGS:")
+        legenda = parts[0].replace("LEGENDA:", "").strip()
+        hashtags = parts[1].strip()
+    else:
+        legenda = result.strip()
 
-# -------------------------
-# LEGENDA
-# -------------------------
-
-def generate_caption(state):
-
-    prompt = f"""
-Crie uma legenda curta para redes sociais.
-
-Ideia: {state.get("melhor_ideia")}
-Produto/Tema: {state.get("tema")}
-Público: {state.get("publico")}
-Plataforma: {state.get("plataforma")}
-
-Regras:
-- mencionar o produto
-- falar com o público
-- máximo 1 frase
-- incluir CTA
-"""
-
-    legenda = llm(prompt)
-
-    if legenda:
-        legenda = legenda.strip()
-
-    state["legenda"] = legenda or ""
-
-    return state
-
-
-# -------------------------
-# HASHTAGS
-# -------------------------
-
-def generate_hashtags(state):
-
-    plataforma = (state.get("plataforma") or "").lower()
-
-    # normaliza plataformas
-    if "insta" in plataforma:
-        plataforma = "instagram"
-
-    if "tik" in plataforma:
-        plataforma = "tiktok"
-
-    # só gerar hashtags nessas redes
-    if plataforma not in ["instagram", "tiktok"]:
-        state["hashtags"] = ""
-        return state
-
-    prompt = f"""
-Crie até 5 hashtags para redes sociais.
-
-Produto/Tema: {state.get("tema")}
-Público: {state.get("publico")}
-
-Regras:
-- máximo 5
-- populares
-- relacionadas ao tema
-
-Retorne apenas hashtags separadas por espaço.
-"""
-
-    hashtags = llm(prompt)
-
+    # garante formato das hashtags
     if hashtags:
+        tags = hashtags.replace("\n", " ").replace(",", " ").split()
+        tags = [t if t.startswith("#") else f"#{t}" for t in tags if t]
+        hashtags = " ".join(tags[:5])
 
-        hashtags = hashtags.replace("\n", " ").replace(",", " ").strip()
-
-        tags = hashtags.split()
-
-        # garante #
-        tags = [t if t.startswith("#") else f"#{t}" for t in tags]
-
-        tags = tags[:5]
-
-        hashtags = " ".join(tags)
-
-    state["hashtags"] = hashtags or ""
+    state["legenda"] = legenda
+    state["hashtags"] = hashtags
 
     return state
 
-
-# -------------------------
-# IMAGE PROMPT
-# -------------------------
 
 def generate_image_prompt(state):
+    """Gera um prompt detalhado para geração de imagem."""
 
-    prompt = f"""
-Write a short prompt for an AI image generator.
+    tema = state.get("tema", "")
+    legenda = state.get("legenda", "")
+    plataforma = state.get("plataforma", "Instagram")
+    publico = state.get("publico", "")
+    detalhes = state.get("detalhes", "")
 
-Product/Theme: {state.get("tema")}
-Idea: {state.get("melhor_ideia")}
-Audience: {state.get("publico")}
+    prompt = f"""You are an expert at writing prompts for AI image generators (Stable Diffusion / FLUX).
 
-Rules:
-- max 15 words
-- clearly show the product
-- specify visual style
-"""
+Create a detailed image prompt for a social media post.
+
+CONTEXT:
+- Product/Theme: {tema}
+- Caption: {legenda}
+- Platform: {plataforma}
+- Audience: {publico or 'general'}
+- Extra details: {detalhes or 'none'}
+
+RULES:
+- Write in English
+- Be specific about: subject, composition, lighting, color palette, style
+- Make it visually striking and scroll-stopping
+- Appropriate for {plataforma}
+- Maximum 60 words
+- Do NOT include text/words in the image
+- Return ONLY the prompt, nothing else"""
 
     image_prompt = llm(prompt)
 
     if image_prompt:
-        image_prompt = image_prompt.strip()
+        image_prompt = image_prompt.strip().strip('"').strip("'")
 
     state["image_prompt"] = image_prompt or ""
-
-    return state
-
-
-# -------------------------
-# FORMAT POST
-# -------------------------
-
-def format_post(state):
-
-    ideia = state.get("melhor_ideia", "")
-    legenda = state.get("legenda", "")
-    hashtags = state.get("hashtags", "")
-    image_prompt = state.get("image_prompt", "")
-
-    post = f"""🎯 Ideia
-{ideia}
-
-✍️ Legenda
-{legenda}
-"""
-
-    if hashtags:
-        post += f"""
-
-🏷️ Hashtags
-{hashtags}
-"""
-
-    if image_prompt:
-        post += f"""
-
-🖼️ Prompt de imagem
-{image_prompt}
-"""
-
-    state["post_final"] = post
 
     return state
