@@ -9,7 +9,7 @@
 
 > Agente de IA conversacional que gera posts completos para redes sociais — da ideia à legenda, hashtags e prompt de imagem — por meio de um pipeline multi-nó com LangGraph.
 
-**Demo ao vivo:** [postador-ai-agent.vercel.app](https://postador-ai-agent.vercel.app)
+**Acesse:** (https://postador.klauberfischer.online/)
 
 ---
 
