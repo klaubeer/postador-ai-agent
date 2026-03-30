@@ -175,10 +175,10 @@ function loadPostImage(url) {
 
   let attempts = 0
   const maxAttempts = 3
+  const retryDelay = 10000 // 10s — Pollinations permite 1 request por vez
 
   function tryLoad() {
     attempts++
-    const cacheBuster = `&t=${Date.now()}`
 
     img.onload = function () {
       loading.style.display = "none"
@@ -188,19 +188,20 @@ function loadPostImage(url) {
 
     img.onerror = function () {
       if (attempts < maxAttempts) {
-        // retry após 5s — Pollinations pode estar gerando
         loading.querySelector("span").textContent = `Gerando imagem... (tentativa ${attempts + 1})`
-        setTimeout(tryLoad, 5000)
+        setTimeout(tryLoad, retryDelay)
       } else {
         loading.querySelector("span").textContent = "Não foi possível carregar a imagem"
         loading.querySelector(".img-spinner").style.display = "none"
       }
     }
 
-    img.src = url + cacheBuster
+    // cache buster pra forçar nova tentativa
+    img.src = url + `&t=${Date.now()}`
   }
 
-  tryLoad()
+  // primeira tentativa com delay de 3s — dá tempo do Pollinations iniciar geração
+  setTimeout(tryLoad, 3000)
 }
 
 
