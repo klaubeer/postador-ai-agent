@@ -157,20 +157,17 @@ def generate_image_prompt(state):
 
     style_desc = VISUAL_STYLES.get(str(estilo_visual), VISUAL_STYLES["1"])
 
-    prompt = f"""You are an expert at writing prompts for AI image generators (FLUX / Stable Diffusion).
+    prompt = f"""Write a short image prompt for FLUX AI generator.
 
-Convert this visual description into an optimized image generation prompt.
+Scene: {descricao}
+Style: {style_desc}
 
-VISUAL DESCRIPTION: {descricao}
-VISUAL STYLE: {style_desc}
-
-RULES:
-- Write in English
-- Include: subject, composition, lighting, color palette, mood
-- Apply the visual style to the entire scene
-- Maximum 60 words
-- Do NOT include text/words in the image
-- Return ONLY the prompt, nothing else"""
+Rules:
+- English only
+- MAX 25 words — be concise and visual
+- Focus on ONE clear scene, not multiple
+- No text in the image
+- Return ONLY the prompt"""
 
     image_prompt = llm(prompt)
 
