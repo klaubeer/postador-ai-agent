@@ -105,9 +105,22 @@ function appendPost(text, imageUrl) {
   lastLegenda = legenda
   lastHashtags = hashtags
 
+  // imagem com loading state — Pollinations pode demorar 1-2min
   let imageHtml = ""
   if (imageUrl) {
-    imageHtml = `<img class="post-card-image" src="${imageUrl}" alt="Imagem do post" loading="lazy" onerror="this.style.display='none'">`
+    imageHtml = `
+      <div class="post-card-image-wrapper" id="img-wrapper">
+        <div class="post-card-image-loading" id="img-loading">
+          <div class="img-spinner"></div>
+          <span>Gerando imagem...</span>
+        </div>
+        <img
+          class="post-card-image"
+          id="post-image"
+          alt="Imagem do post"
+          style="display:none"
+        >
+      </div>`
   }
 
   let bodyHtml = ""
@@ -145,6 +158,49 @@ function appendPost(text, imageUrl) {
 
   chat.appendChild(div)
   scrollToBottom()
+
+  // carrega imagem após inserir no DOM
+  if (imageUrl) {
+    loadPostImage(imageUrl)
+  }
+}
+
+
+// ---- carregamento de imagem com retry ----
+
+function loadPostImage(url) {
+  const img = document.getElementById("post-image")
+  const loading = document.getElementById("img-loading")
+  if (!img || !loading) return
+
+  let attempts = 0
+  const maxAttempts = 3
+
+  function tryLoad() {
+    attempts++
+    const cacheBuster = `&t=${Date.now()}`
+
+    img.onload = function () {
+      loading.style.display = "none"
+      img.style.display = "block"
+      scrollToBottom()
+    }
+
+    img.onerror = function () {
+      if (attempts < maxAttempts) {
+        // retry após 5s — Pollinations pode estar gerando
+        loading.querySelector("span").textContent = `Gerando imagem... (tentativa ${attempts + 1})`
+        setTimeout(tryLoad, 5000)
+      } else {
+        loading.querySelector("span").textContent = "Não foi possível carregar a imagem"
+        loading.querySelector(".img-spinner").style.display = "none"
+      }
+    }
+
+    img.src = url + cacheBuster
+  }
+
+  tryLoad()
 }
 
 
@@ -185,25 +241,11 @@ function copiarHashtags() {
   showToast("Hashtags copiadas!")
 }
 
-async function baixarImagem() {
+function baixarImagem() {
   if (!lastImageUrl) return
-
-  try {
-    const res = await fetch(lastImageUrl)
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-
-    const link = document.createElement("a")
-    link.href = url
-    link.download = "postador-imagem.png"
-    link.click()
-
-    URL.revokeObjectURL(url)
-    showToast("Download iniciado!")
-  } catch (err) {
-    console.error(err)
-    window.open(lastImageUrl, "_blank")
-  }
+  // abre em nova aba — CORS impede fetch direto do Pollinations
+  window.open(lastImageUrl, "_blank")
+  showToast("Imagem aberta em nova aba — clique com botão direito para salvar!")
 }
 
 function recomecar() {
