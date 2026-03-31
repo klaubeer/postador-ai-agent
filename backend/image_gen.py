@@ -15,7 +15,7 @@ def generate_image(prompt: str) -> dict:
     print(f"[IMAGE] prompt: {prompt}")
 
     encoded_prompt = quote(prompt)
-    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&model=flux&nologo=true"
+    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&model=turbo&nologo=true"
 
     print(f"[IMAGE] URL: {url}")
 
