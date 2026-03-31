@@ -1,5 +1,4 @@
 from backend.llm import llm
-from backend.observabilidade import sentinela
 
 
 PLATFORM_STYLE = {
@@ -19,7 +18,6 @@ VISUAL_STYLES = {
 }
 
 
-@sentinela.observe(nome="generate-ideas")
 def generate_ideas(state):
     """Gera 3 ideias de post detalhadas para o usuário escolher."""
 
@@ -62,13 +60,12 @@ Regras:
 - Seja criativo e prático
 - Retorne EXATAMENTE no formato acima"""
 
-    result = llm(prompt)
+    result = llm(prompt, nome="generate-ideas")
     state["ideias_raw"] = result.strip()
 
     return state
 
 
-@sentinela.observe(nome="generate-final-post")
 def generate_final_post(state):
     """Gera o post final com base na ideia escolhida e estilo visual."""
 
@@ -104,7 +101,7 @@ HASHTAGS:
 DESCRICAO_IMAGEM:
 [Descrição visual detalhada para gerar a imagem com IA. Descreva a cena, composição, iluminação. NÃO repita o estilo visual aqui — ele será aplicado automaticamente. Máximo 2 frases em português.]"""
 
-    result = llm(prompt)
+    result = llm(prompt, nome="generate-final-post")
 
     # parse
     legenda = ""
@@ -152,7 +149,6 @@ DESCRICAO_IMAGEM:
     return state
 
 
-@sentinela.observe(nome="generate-image-prompt")
 def generate_image_prompt(state):
     """Converte a descrição visual + estilo em prompt de IA para imagem."""
 
@@ -173,7 +169,7 @@ Rules:
 - No text in the image
 - Return ONLY the prompt"""
 
-    image_prompt = llm(prompt)
+    image_prompt = llm(prompt, nome="generate-image-prompt")
 
     if image_prompt:
         image_prompt = image_prompt.strip().strip('"').strip("'")
