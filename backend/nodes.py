@@ -1,4 +1,5 @@
 from backend.llm import llm
+from backend.observabilidade import sentinela
 
 
 PLATFORM_STYLE = {
@@ -18,6 +19,7 @@ VISUAL_STYLES = {
 }
 
 
+@sentinela.observe(nome="generate-ideas")
 def generate_ideas(state):
     """Gera 3 ideias de post detalhadas para o usuário escolher."""
 
@@ -66,6 +68,7 @@ Regras:
     return state
 
 
+@sentinela.observe(nome="generate-final-post")
 def generate_final_post(state):
     """Gera o post final com base na ideia escolhida e estilo visual."""
 
@@ -149,6 +152,7 @@ DESCRICAO_IMAGEM:
     return state
 
 
+@sentinela.observe(nome="generate-image-prompt")
 def generate_image_prompt(state):
     """Converte a descrição visual + estilo em prompt de IA para imagem."""
 

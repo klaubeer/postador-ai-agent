@@ -1,5 +1,6 @@
 import json
 from backend.llm import llm_chat
+from backend.observabilidade import sentinela
 
 
 SYSTEM_PROMPT = """Você é o Postador, um assistente criativo que ajuda a criar posts para redes sociais.
@@ -38,6 +39,7 @@ Seu objetivo é entender o que o usuário quer e coletar contexto de forma natur
 Em state_updates, preencha APENAS campos que o usuário informou. Deixe null os demais."""
 
 
+@sentinela.observe(nome="planner")
 def planner(messages: list, state: dict, session_id: str = None) -> dict:
 
     # monta contexto do estado atual
