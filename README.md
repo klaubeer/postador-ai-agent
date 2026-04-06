@@ -1,3 +1,5 @@
+[English version here](README-EN.md)
+
 # Postador — Agente de IA para Criação de Conteúdo
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
